@@ -66,7 +66,7 @@ int isValidName(const char *str) {
     if (length >= DEFAULT_BUFFER_SIZE) {
         return 0;
     }
-    for (int i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         if (!isgraph(str[i])) {
             return 0;
         }
@@ -74,7 +74,7 @@ int isValidName(const char *str) {
 
     //* way 2:
     char *p = str;
-    int length = 0;
+    size_t length = 0;
     while (*p) {
         if (!isgraph(*p)) {
             return 0;
@@ -109,7 +109,7 @@ int isValidMultiword(const char *str) {
     }
 
     // check if characters are in a name field (have a graphical representation) or contain space characters
-    for (int i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         if (!isgraph(str[i]) && str[i] != ' ') {
             return 0;
         }
@@ -132,6 +132,7 @@ int isValidItemDetails(const struct ItemDetails *id) {
 /**
  * @brief  Checks whether a Character struct is valid.
  * @note   A Character struct is valid iff: the profession field is a valid name field, the name field is a valid multi-word field, the total number of items carried does not exceed MAX_ITEMS, and inventorySize is less than or equal to MAX_ITEMS.
+ * `inventorySize` is a 64-bit unsigned integer value
  * @param  *c: A pointer to a Character struct.
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
@@ -144,8 +145,8 @@ int isValidCharacter(const struct Character *c) {
     }
 
     // Check if the total number of items carried does not exceed MAX_ITEMS
-    int n_items = 0;
-    for (int i = 0; i < c->inventorySize; i++) {
+    unsigned n_items = 0;
+    for (unsigned i = 0; i < c->inventorySize; i++) {
         n_items += c->inventory[i].quantity;
     }
     if (n_items > MAX_ITEMS) {
