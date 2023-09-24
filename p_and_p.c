@@ -6,6 +6,7 @@
 #include <string.h>
 
 // TODO: Finish first, then improve
+//* pay attention to type specifier: size_t or uint64_t
 
 /**
  * Requirments: Code should handle errors gracefully when reading or writing files – such errors include file open failures, insufficient memory, and file corruption.
@@ -115,7 +116,7 @@ int isValidMultiword(const char *str) {
         }
     }
 
-    return 0;
+    return 1;
 }
 
 /**
@@ -125,7 +126,11 @@ int isValidMultiword(const char *str) {
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidItemDetails(const struct ItemDetails *id) {
-    return 0;
+    if (!isValidName(id->name) || !isValidMultiword(id->desc)) {
+        return 0;
+    }
+
+    return 1;
 }
 
 //* done, not improved
