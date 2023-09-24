@@ -73,18 +73,18 @@ int isValidName(const char *str) {
     }
 
     //* way 2:
-    char *p = str;
-    size_t length = 0;
-    while (*p) {
-        if (!isgraph(*p)) {
-            return 0;
-        }
-        length++;
-        if (length >= DEFAULT_BUFFER_SIZE) {
-            return 0;
-        }
-        p++;
-    }
+    // char *p = str;
+    // size_t length = 0;
+    // while (*p) {
+    //     if (!isgraph(*p)) {
+    //         return 0;
+    //     }
+    //     length++;
+    //     if (length >= DEFAULT_BUFFER_SIZE) {
+    //         return 0;
+    //     }
+    //     p++;
+    // }
 
     return 1;
 }
@@ -145,8 +145,9 @@ int isValidCharacter(const struct Character *c) {
     }
 
     // Check if the total number of items carried does not exceed MAX_ITEMS
-    unsigned n_items = 0;
-    for (unsigned i = 0; i < c->inventorySize; i++) {
+    //?! size_t or uint64_t
+    size_t n_items = 0;
+    for (size_t i = 0; i < c->inventorySize; i++) {
         n_items += c->inventory[i].quantity;
     }
     if (n_items > MAX_ITEMS) {
