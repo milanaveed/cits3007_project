@@ -16,6 +16,9 @@ Additionally, since the code will be part of a library – rather than being an 
 */
 
 /**
+ //* Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
+ */
+/**
  * @brief  Serializes an array of ItemDetails structs. It should store the array using the ItemDetails file format.
  *
  * @param  arr: An array of ItemDetails structs.
@@ -119,6 +122,7 @@ int isValidMultiword(const char *str) {
     return 1;
 }
 
+//* done, not improved
 /**
  * @brief  Checks whether an ItemDetails struct is valid.
  * @note   A valid ItemDetails format means that its name and desc fields are valid name and multi-word fields, respectively.
@@ -161,10 +165,6 @@ int isValidCharacter(const struct Character *c) {
 
     return 1;
 }
-
-/**
- //* Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
- */
 
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
