@@ -89,6 +89,7 @@ int isValidName(const char *str) {
     return 1;
 }
 
+//* done, not improved
 /**
  * @brief  Checks whether a string constitutes a valid multi-word field, which may contain all the characters in a name field, and may also contain space characters (but the first and the last characters must not be spaces).
  * @note   A multi-word field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
@@ -96,6 +97,24 @@ int isValidName(const char *str) {
  * @retval Returns 1 if it is a valid multi-word field, and 0 if not.
  */
 int isValidMultiword(const char *str) {
+    // check string length
+    size_t length = strlen(str);
+    if (length >= DEFAULT_BUFFER_SIZE) {
+        return 0;
+    }
+
+    // check if the first and last characters contain space characters
+    if (str[0] == ' ' || str[length - 1] == ' ') {
+        return 0;
+    }
+
+    // check if characters are in a name field (have a graphical representation) or contain space characters
+    for (int i = 0; i < length; i++) {
+        if (!isgraph(str[i]) && str[i] != ' ') {
+            return 0;
+        }
+    }
+
     return 0;
 }
 
