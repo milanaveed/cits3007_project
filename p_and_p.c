@@ -51,6 +51,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numEls, int fd) {
     return 0;
 }
 
+//* done, not improved
 /**
  * @brief  Checks whether a string constitutes a valid name field, which requires the characters contained to have a graphical representation (as defined by the C function isgraph). No other characters are permitted. This means that names cannot contain (for instance) whitespace or control characters.
  * @note   A name field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
@@ -58,7 +59,34 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numEls, int fd) {
  * @retval Returns 1 if it is a valid name field, and 0 if not.
  */
 int isValidName(const char *str) {
-    return 0;
+    // check the length (at most DEFAULT_BUFFER_SIZE-1) and characters
+    //? Should we use the strlen() to get the length of the string, or should we count it manually? Which is a better practice, way 1 or way 2?
+    //* way 1:
+    size_t length = strlen(str);
+    if (length >= DEFAULT_BUFFER_SIZE) {
+        return 0;
+    }
+    for (int i = 0; i < length; i++) {
+        if (!isgraph(str[i])) {
+            return 0;
+        }
+    }
+
+    //* way 2:
+    char *p = str;
+    int length = 0;
+    while (*p) {
+        if (!isgraph(*p)) {
+            return 0;
+        }
+        length++;
+        if (length >= DEFAULT_BUFFER_SIZE) {
+            return 0;
+        }
+        p++;
+    }
+
+    return 1;
 }
 
 /**
@@ -107,6 +135,10 @@ int isValidCharacter(const struct Character *c) {
 
     return 1;
 }
+
+/**
+ //* Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
+ */
 
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
