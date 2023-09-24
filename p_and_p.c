@@ -145,7 +145,7 @@ int isValidCharacter(const struct Character *c) {
 
     // Check if the total number of items carried does not exceed MAX_ITEMS
     int n_items = 0;
-    for (int i = 0; i < MAX_ITEMS; i++) {
+    for (int i = 0; i < c->inventorySize; i++) {
         n_items += c->inventory[i].quantity;
     }
     if (n_items > MAX_ITEMS) {
