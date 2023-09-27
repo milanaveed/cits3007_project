@@ -4,9 +4,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
+#define SUCCESS 0
+#define ERR_OPEN_FILE -1
+#define ERR_INSUFFICIENT_MEMORY -2
+//#define ERR_
+
+
+//? Do we need this?
+static_assert(sizeof(size_t) ==8, "we assume the size of size_t is 64bit.");
 
 // TODO: Finish first, then improve
 //* pay attention to type specifier: size_t or uint64_t
+//* compile with gcc -I.
+//* write a fairly brief documentation block: when documenting, we can assume the reader is familiar with the file format and the struct types
+//* [FILE* and file descriptor read/write performance](https://stackoverflow.com/questions/17524512/file-and-file-descriptor-read-write-performance/17524609#17524609)
 
 /**
  * Requirments: Code should handle errors gracefully when reading or writing files – such errors include file open failures, insufficient memory, and file corruption.
@@ -26,11 +39,14 @@ Additionally, since the code will be part of a library – rather than being an 
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
+//* take some structs as input, and produce a file that matches the specification given
+//*There's also a tip in this week's lab – when working with a FILE pointer obtained from a file descriptor, you might need to call fflush (see man fflush) to "write out" those buffers. The buffers are automatically written out when a FILE pointer is closed with fclose; but if you have a FILE pointer you created yourself (e.g. with fdopen) that just goes out of scope, then you may need to flush the buffers before your function exits.
+//* use fread and fwrite
 int saveItemDetails(const struct ItemDetails *arr, size_t numEls, int fd) {
     return 0;
 }
 
-//! no information about this function in the project specification
+//* not required to implement that, but will be helpful to do so when doing my own testing
 /**
  * @brief
  * @note
@@ -52,6 +68,10 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numEls, const ch
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
 int loadItemDetails(struct ItemDetails **ptr, size_t *numEls, int fd) {
+    //Read the number of records from the file header
+
+    
+    
     return 0;
 }
 
@@ -166,6 +186,7 @@ int isValidCharacter(const struct Character *c) {
     return 1;
 }
 
+//* "The file does not necessarily store the full, MAX_ITEMS long inventory array. If the inventorySize is 2, then only 2 records from that array are stored in the file."
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
@@ -197,8 +218,18 @@ int loadCharacters(struct Character **ptr, size_t *numEls, int fd) {
  * @param  *filepath:
  * @retval Returns 1 if an error occurs during the deserialization process. It should check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin. If that is not the case, or if an error occurs in acquiring or dropping permissions, the function should return 2. In all other cases, it should return 0.
  */
+//*check labs and forum
+// "We could start it as one process, and then one of them splits off, and it's the privileged bit, and the other one splits off, and it's the unprivileged bit"
 int secureLoad(const char *filepath) {
     return 0;
 }
 
+/**
+ *  "the spec says that your secureLoad() function must call the playGame() function; but no playGame() is defined in your p_and_p.c file.
+
+For testing purposes only, you'll therefore probably want to define a playGame() function somewhere (so that you can successfully link and run tests on your code); if the function isn't defined, you'll get failures at link time.
+
+But you should not include a definition of playGame() in your submitted code (since if you do, the tests we run on your submitted code won't compile and link correctly)"
+*/
+//! delete the playGame() definition, but not the declaration
 void playGame(struct ItemDetails *ptr, size_t numEls);

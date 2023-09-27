@@ -19,6 +19,12 @@
  * laid out in the project specification for valid
  * ItemDetails structs.
  */
+//? Arran said in the lecture that, one of the best practises is making sure that we zero out all of the memory there before we write it to a file. What does that mean?
+// We have to zero out buffers when we write them to disc, what does zero out mean?
+// If we read something from disc, we assume that it's in a nice sanitised format and everything has been zeroed out. We want to be careful when we read stuff in. We validate it's in the format we expect.
+// Put in some static asserts and say, i'm about to assume that a size_t is 64 bits.
+//TODO: check the forum
+//* suggested: use fread and fwrite to read and write that to disc
 struct ItemDetails {
   uint64_t itemID;
   char name[DEFAULT_BUFFER_SIZE];
