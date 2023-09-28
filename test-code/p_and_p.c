@@ -34,7 +34,7 @@ Additionally, since the code will be part of a library – rather than being an 
 */
 
 /**
-  Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
+ //* Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
  */
 /**
  * @brief  Serializes an array of ItemDetails structs. It should store the array using the ItemDetails file format.
