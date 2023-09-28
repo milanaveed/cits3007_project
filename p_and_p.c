@@ -1,19 +1,20 @@
 #include <p_and_p.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #define SUCCESS 0
-#define ERR_OPEN_FILE -1
-#define ERR_INSUFFICIENT_MEMORY -2
-//#define ERR_
-
+#define ERR_OPEN_FILE 1
+#define ERR_INSUFFICIENT_MEMORY 1
+#define ERR_WRITE_FILE 1
+#define ERR_READ_FILE 1
+// #define ERR_
 
 //? Do we need this?
-static_assert(sizeof(size_t) ==8, "we assume the size of size_t is 64bit.");
+static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 
 // TODO: Finish first, then improve
 //* pay attention to type specifier: size_t or uint64_t
@@ -21,7 +22,7 @@ static_assert(sizeof(size_t) ==8, "we assume the size of size_t is 64bit.");
 //* write a fairly brief documentation block: when documenting, we can assume the reader is familiar with the file format and the struct types
 //* [FILE* and file descriptor read/write performance](https://stackoverflow.com/questions/17524512/file-and-file-descriptor-read-write-performance/17524609#17524609)
 //* will get low mark if too many comments. Comments should be used to explain what is not in the code
-//! sanitise things in and out
+// TODO: sanitise things in and out
 //? when should we zero things out? By using memset?
 //* only submit this .c file
 //* Inline comments should not say what the code is doing – anyone who understands the programming language should be able to see that – but rather why it is doing it.
@@ -40,15 +41,49 @@ Additionally, since the code will be part of a library – rather than being an 
  * @brief  Serializes an array of ItemDetails structs. It should store the array using the ItemDetails file format.
  *
  * @param  arr: An array of ItemDetails structs.
- * @param  numEls: Number of items.
+ * @param  numItems: Number of items.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 //* take some structs as input, and produce a file that matches the specification given
 //*There's also a tip in this week's lab – when working with a FILE pointer obtained from a file descriptor, you might need to call fflush (see man fflush) to "write out" those buffers. The buffers are automatically written out when a FILE pointer is closed with fclose; but if you have a FILE pointer you created yourself (e.g. with fdopen) that just goes out of scope, then you may need to flush the buffers before your function exits.
 //* use fread and fwrite
-int saveItemDetails(const struct ItemDetails *arr, size_t numEls, int fd) {
-    return 0;
+//* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
+//* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
+// TODO: fflush
+int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
+    FILE *fp = fdopen(fd, "wb");
+    if (fp == NULL) {
+        return ERR_OPEN_FILE;
+    }
+
+    if (fwrite(&numItems, sizeof(size_t), 1, fp) != 1) {
+        fclose(fp);
+        return ERR_WRITE_FILE;
+    }
+
+    for (size_t i = 0; i < numItems; i++) {
+        const struct ItemDetails *current_item = &arr[i];
+
+        if (fwrite(&(current_item->itemID), sizeof(uint64_t), 1, fp) != 1) {
+            fclose(fp);
+            return ERR_WRITE_FILE;
+        }
+
+        if (fwrite(current_item->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+            fclose(fp);
+            return ERR_WRITE_FILE;
+        }
+
+        if (fwrite(current_item->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+            fclose(fp);
+            return ERR_WRITE_FILE;
+        }
+    }
+
+    fclose(fp);
+
+    return SUCCESS;
 }
 
 //* not required to implement that, but will be helpful to do so when doing my own testing
@@ -56,28 +91,43 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numEls, int fd) {
  * @brief
  * @note
  * @param  arr:
- * @param  numEls:
+ * @param  numItems:
  * @param  filename:
  * @retval
  */
-int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numEls, const char *filename) {
+int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const char *filename) {
     return 0;
 }
 
 /**
- * @brief  Deserializes a file, including allocating enough memory to store the number of records contained in the file, and write the address of that memory to ptr. The memory is to be freed by the caller. Write all records contained in the file into the allocated memory. Write the number of records to numEls.
+ * @brief  Deserializes a file, including allocating enough memory to store the number of records contained in the file, and write the address of that memory to ptr. The memory is to be freed by the caller. Write all records contained in the file into the allocated memory. Write the number of records to numItems.
  *
  * @param  ptr: The address of a pointer-to-ItemDetails struct.
- * @param  numEls: The address of a size_t.
+ * @param  numItems: The address of a size_t.
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
-int loadItemDetails(struct ItemDetails **ptr, size_t *numEls, int fd) {
-    //Read the number of records from the file header
+int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
+    FILE *fp = fdopen(fd, "rb");
+    if (fp == NULL) {
+        return ERR_OPEN_FILE;
+    }
 
-    
-    
-    return 0;
+    if (fread(numItems, sizeof(size_t), 1, fp) != 1) {
+        fclose(fp);
+        return ERR_READ_FILE;
+    }
+
+    *ptr = malloc(*numItems * sizeof(struct ItemDetails));
+    if (*ptr == NULL) {
+        fclose(fp);
+        return ERR_INSUFFICIENT_MEMORY;
+    }
+
+    //TODO:
+    // if (fread())
+
+        return 0;
 }
 
 //* done, not improved
@@ -152,7 +202,7 @@ int isValidMultiword(const char *str) {
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidItemDetails(const struct ItemDetails *id) {
-    if (!isValidName(id->name) || !isValidMultiword(id->desc)) {
+    if (!isValidName(id->itemName) || !isValidMultiword(id->itemDesc)) {
         return 0;
     }
 
@@ -193,11 +243,11 @@ int isValidCharacter(const struct Character *c) {
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
  * @param  *arr:
- * @param  numEls:
+ * @param  numItems:
  * @param  fd: A file descriptor.
  * @retval
  */
-int saveCharacters(struct Character *arr, size_t numEls, int fd) {
+int saveCharacters(struct Character *arr, size_t numItems, int fd) {
     return 0;
 }
 
@@ -205,11 +255,11 @@ int saveCharacters(struct Character *arr, size_t numEls, int fd) {
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
  * @param  **ptr:
- * @param  *numEls:
+ * @param  *numItems:
  * @param  fd:
  * @retval
  */
-int loadCharacters(struct Character **ptr, size_t *numEls, int fd) {
+int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     return 0;
 }
 
@@ -234,4 +284,4 @@ For testing purposes only, you'll therefore probably want to define a playGame()
 But you should not include a definition of playGame() in your submitted code (since if you do, the tests we run on your submitted code won't compile and link correctly)"
 */
 //! delete the playGame() definition, but not the declaration
-void playGame(struct ItemDetails *ptr, size_t numEls);
+void playGame(struct ItemDetails *ptr, size_t numItems);

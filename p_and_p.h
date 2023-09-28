@@ -27,8 +27,8 @@
 //* suggested: use fread and fwrite to read and write that to disc
 struct ItemDetails {
   uint64_t itemID;
-  char name[DEFAULT_BUFFER_SIZE];
-  char desc[DEFAULT_BUFFER_SIZE];
+  char itemName[DEFAULT_BUFFER_SIZE];
+  char itemDesc[DEFAULT_BUFFER_SIZE];
 };
 
 /**
@@ -80,13 +80,13 @@ struct Character {
   struct ItemCarried inventory[MAX_ITEMS];
 };
 
-int saveItemDetails(const struct ItemDetails* arr, size_t numEls, int fd);
+int saveItemDetails(const struct ItemDetails* arr, size_t numItems, int fd);
 
-int saveItemDetailsToPath(const struct ItemDetails* arr, size_t numEls, const char* filename);
+int saveItemDetailsToPath(const struct ItemDetails* arr, size_t numItems, const char* filename);
 
-int loadItemDetails(struct ItemDetails** ptr, size_t* numEls, int fd);
+int loadItemDetails(struct ItemDetails** ptr, size_t* numItems, int fd);
 
-int loadItemDetailsFromPath(struct ItemDetails** ptr, size_t* numEls, const char* filename);
+int loadItemDetailsFromPath(struct ItemDetails** ptr, size_t* numItems, const char* filename);
 
 int isValidName(const char * str);
 
@@ -98,11 +98,11 @@ int isValidCharacter(const struct Character *c);
 
 int saveCharacters(struct Character *arr, size_t numEls, int fd);
 
-int loadCharacters(struct Character** ptr, size_t* numEls, int fd);
+int loadCharacters(struct Character** ptr, size_t* numELS, int fd);
 
 int secureLoad(const char *filepath);
 
-void playGame(struct ItemDetails* ptr, size_t numEls);
+void playGame(struct ItemDetails* ptr, size_t numItems);
 
 #endif
 // P_AND_P_H
