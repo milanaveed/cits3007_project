@@ -144,43 +144,23 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     }
 
     for (size_t i = 0; i < num; i++) {
-        struct ItemDetails *currentItem = (struct ItemDetails *)malloc(sizeof(struct ItemDetails));
-        if (currentItem == NULL) {
-            free(*ptr);
-            fclose(fp);
-            return ERR_MEMORY_ALLOCATION;
-        }
+        struct ItemDetails currentItem;
 
-        if (fread(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
-            free(currentItem);
-            free(*ptr);
+        size_t elsRead = fread(&currentItem, sizeof(struct ItemDetails), 1, fp);
+
+        if (elsRead != 1) {
             fclose(fp);
+            free(*ptr);
             return ERR_READ_FILE;
         }
 
-        if (fread(currentItem->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-            free(currentItem);
-            free(*ptr);
+        if (!isValidItemDetails(&currentItem)) {
             fclose(fp);
-            return ERR_READ_FILE;
-        }
-
-        if (fread(currentItem->desc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-            free(currentItem);
             free(*ptr);
-            fclose(fp);
-            return ERR_READ_FILE;
-        }
-
-        if (!isValidItemDetails(currentItem)) {
-            free(currentItem);
-            free(*ptr);
-            fclose(fp);
             return ERR_INVALID_TYPE;
         }
 
-        (*ptr)[i] = *currentItem; //? just get a copy of the content pointed to by currentItem
-        free(currentItem);        //? is safe to call
+        (*ptr)[i] = currentItem;
     }
 
     *numItems = num;

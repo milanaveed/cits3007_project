@@ -53,6 +53,7 @@ Additionally, since the code will be part of a library – rather than being an 
 //* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
 // TODO: fflush
+//* done, checked, not improved
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -63,7 +64,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    if (fwrite(&numItems, sizeof(size_t), 1, fp) != 1) {
+    if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_WRITE_FILE;
     }
@@ -71,7 +72,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     for (size_t i = 0; i < numItems; i++) {
         const struct ItemDetails *currentItem = &arr[i];
 
-        if(!isValidItemDetails(currentItem)){
+        if (!isValidItemDetails(currentItem)) {
             fclose(fp);
             return ERR_INVALID_TYPE;
         }
@@ -119,6 +120,7 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const 
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
+//* done, checked, not improved
 int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -129,8 +131,8 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    size_t num;
-    if (fread(&num, sizeof(size_t), 1, fp) != 1) {
+    size_t num; //! Should I initialise it to 0? What is a better practice?
+    if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_READ_FILE;
     }
@@ -142,48 +144,29 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     }
 
     for (size_t i = 0; i < num; i++) {
-        struct ItemDetails *currentItem = (struct ItemDetails *)malloc(sizeof(struct ItemDetails));
-        if (currentItem == NULL) {
-            fclose(fp);
-            return ERR_MEMORY_ALLOCATION;
-        }
+        struct ItemDetails currentItem;
 
-        if (fread(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
-            free(currentItem);
-            free(*ptr);
+        size_t elsRead = fread(&currentItem, sizeof(struct ItemDetails), 1, fp);
+
+        if (elsRead != 1) {
             fclose(fp);
+            free(*ptr);
             return ERR_READ_FILE;
         }
 
-        if (fread(currentItem->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-            free(currentItem);
-            free(*ptr);
+        if (!isValidItemDetails(&currentItem)) {
             fclose(fp);
-            return ERR_READ_FILE;
-        }
-
-        if (fread(currentItem->desc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-            free(currentItem);
             free(*ptr);
-            fclose(fp);
-            return ERR_READ_FILE;
-        }
-
-        if (!isValidItemDetails(currentItem)) {
-            free(currentItem);
-            free(*ptr);
-            fclose(fp);
             return ERR_INVALID_TYPE;
         }
 
-        (*ptr)[i] = *currentItem; //? just get a copy of the content pointed to by currentItem
-        free(currentItem);        //? is safe to call
+        (*ptr)[i] = currentItem;
     }
 
     *numItems = num;
-    fflush(fp);  //? when should i call fflush()?
+    fflush(fp); //? when should i call fflush()?
     fclose(fp);
-    return 0;
+    return SUCCESS;
 }
 
 /*
@@ -199,7 +182,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
 
 So, after this line of code, `currentItem` is a pointer to the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.*/
 
-//* done, not improved
+//* done, checked, passed moodle, not improved
 /**
  * @brief  Checks whether a string constitutes a valid name field, which requires the characters contained to have a graphical representation (as defined by the C function isgraph). No other characters are permitted. This means that names cannot contain (for instance) whitespace or control characters.
  * @note   A name field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
@@ -222,7 +205,7 @@ int isValidName(const char *str) {
     return 1;
 }
 
-//* done, not improved
+//* done, checked, passed moodle, not improved
 /**
  * @brief  Checks whether a string constitutes a valid multi-word field, which may contain all the characters in a name field, and may also contain space characters (but the first and the last characters must not be spaces).
  * @note   A multi-word field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
@@ -295,10 +278,10 @@ int isValidCharacter(const struct Character *c) {
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
- * @param  *arr:
- * @param  numItems:
+ * @param  *arr: An array of characters.
+ * @param  numItems: The number of Character structs.
  * @param  fd: A file descriptor.
- * @retval
+ * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveCharacters(struct Character *arr, size_t numItems, int fd) {
     return 0;
@@ -307,13 +290,58 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
 /**
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
- * @param  **ptr:
- * @param  *numItems:
- * @param  fd:
- * @retval
+ * @param  **ptr: A pointer to a pointer to characters.
+ * @param  *numItems: The address of a size_t.
+ * @param  fd: A file descriptor.
+ * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
-    return 0;
+    if (fd < 0) {
+        return ERR_INVALID_FD;
+    }
+
+    FILE *fp = fdopen(fd, "rb");
+    if (fp == NULL) {
+        return ERR_OPEN_FILE;
+    }
+
+    size_t num;
+    if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
+        fclose(fp);
+        return ERR_READ_FILE;
+    }
+
+    *ptr = (struct Character *)malloc(num * sizeof(struct Character));
+    if (*ptr == NULL) {
+        fclose(fp);
+        return ERR_MEMORY_ALLOCATION;
+    }
+
+    for (size_t i = 0; i < num; ++i) {
+        struct Character currentCharacter;
+
+        size_t elsRead = fread(&currentCharacter, sizeof(struct Character), 1, fp);
+
+        if (elsRead != 1) {
+            fclose(fp);
+            free(*ptr);
+            return ERR_READ_FILE;
+        }
+
+        if (!isValidCharacter(&currentCharacter)) {
+            fclose(fp);
+            free(*ptr);
+            return ERR_INVALID_TYPE;
+        }
+
+        (*ptr)[i] = currentCharacter;
+    }
+
+    *numItems = num;
+    fflush(fp);
+    fclose(fp);
+
+    return SUCCESS;
 }
 
 /**
