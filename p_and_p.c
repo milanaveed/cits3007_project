@@ -81,12 +81,12 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
             return ERR_WRITE_FILE;
         }
 
-        if (fwrite(currentItem->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fwrite(currentItem->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
 
-        if (fwrite(currentItem->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fwrite(currentItem->desc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
@@ -155,14 +155,14 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
             return ERR_READ_FILE;
         }
 
-        if (fread(currentItem->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fread(currentItem->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             free(currentItem);
             free(*ptr);
             fclose(fp);
             return ERR_READ_FILE;
         }
 
-        if (fread(currentItem->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fread(currentItem->desc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             free(currentItem);
             free(*ptr);
             fclose(fp);
@@ -256,7 +256,7 @@ int isValidMultiword(const char *str) {
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidItemDetails(const struct ItemDetails *id) {
-    if (!isValidName(id->itemName) || !isValidMultiword(id->itemDesc)) {
+    if (!isValidName(id->name) || !isValidMultiword(id->desc)) {
         return 0;
     }
 
@@ -280,7 +280,6 @@ int isValidCharacter(const struct Character *c) {
     }
 
     // Check if the total number of items carried does not exceed MAX_ITEMS
-    //?! size_t or uint64_t
     size_t n_items = 0;
     for (size_t i = 0; i < c->inventorySize; i++) {
         n_items += c->inventory[i].quantity;
@@ -317,7 +316,6 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     return 0;
 }
 
-//! parameters are inconsistent with the project specification
 /**
  * @brief  Acquires appropriate permissions, loads the ItemDetails database, and then permanently drops permissions.
  * @note   It should attempt to acquire appropriate permissions for opening the ItemDetails database (that is: the effective userID should be set to the userID of pitchpoltadmin), should load the database from the specified file, and then (after permanently dropping privileges), call the function `playGame()` to which it should pass the loaded data.

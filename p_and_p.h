@@ -27,8 +27,8 @@
 //* suggested: use fread and fwrite to read and write that to disc
 struct ItemDetails {
   uint64_t itemID;
-  char itemName[DEFAULT_BUFFER_SIZE];
-  char itemDesc[DEFAULT_BUFFER_SIZE];
+  char name[DEFAULT_BUFFER_SIZE];
+  char desc[DEFAULT_BUFFER_SIZE];
 };
 
 /**
