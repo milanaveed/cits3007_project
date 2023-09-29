@@ -70,24 +70,16 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     }
 
     for (size_t i = 0; i < numItems; i++) {
-        const struct ItemDetails *currentItem = &arr[i];
+        const struct ItemDetails currentItem = arr[i];
 
-        if (!isValidItemDetails(currentItem)) {
+        if (!isValidItemDetails(&currentItem)) {
             fclose(fp);
             return ERR_INVALID_TYPE;
         }
 
-        if (fwrite(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
-            fclose(fp);
-            return ERR_WRITE_FILE;
-        }
+        size_t elsWritten = fwrite(&currentItem, sizeof(struct ItemDetails), 1, fp);
 
-        if (fwrite(currentItem->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-            fclose(fp);
-            return ERR_WRITE_FILE;
-        }
-
-        if (fwrite(currentItem->desc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (elsWritten != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
@@ -283,8 +275,42 @@ int isValidCharacter(const struct Character *c) {
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
+//* done, passed moodle, not improved
 int saveCharacters(struct Character *arr, size_t numItems, int fd) {
-    return 0;
+    if (fd < 0) {
+        return ERR_INVALID_FD;
+    }
+
+    FILE *fp = fdopen(fd, "wb");
+    if (fp == NULL) {
+        return ERR_OPEN_FILE;
+    }
+
+    if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
+        fclose(fp);
+        return ERR_WRITE_FILE;
+    }
+
+    for (size_t i = 0; i < numItems; i++) {
+        struct Character currentCharacter = arr[i];
+
+        if (!isValidCharacter(&currentCharacter)) {
+            fclose(fp);
+            return ERR_INVALID_TYPE;
+        }
+
+        size_t elsWritten = fwrite(&currentCharacter, sizeof(struct Character), 1, fp);
+
+        if (elsWritten != 1) {
+            fclose(fp);
+            return ERR_WRITE_FILE;
+        }
+    }
+
+    fflush(fp);
+    fclose(fp);
+
+    return SUCCESS;
 }
 
 /**
