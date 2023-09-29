@@ -8,13 +8,12 @@
 
 #define SUCCESS 0
 #define ERR_OPEN_FILE 1
-#define ERR_INSUFFICIENT_MEMORY 1
+#define ERR_MEMORY_ALLOCATION 1
 #define ERR_WRITE_FILE 1
 #define ERR_READ_FILE 1
 #define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
-// #define ERR_
 
 //? Do we need this?
 static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
@@ -71,6 +70,11 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
 
     for (size_t i = 0; i < numItems; i++) {
         const struct ItemDetails *currentItem = &arr[i];
+
+        if(!isValidItemDetails(currentItem)){
+            fclose(fp);
+            return ERR_INVALID_TYPE;
+        }
 
         if (fwrite(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
             fclose(fp);
@@ -134,14 +138,14 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
     if (*ptr == NULL) {
         fclose(fp);
-        return ERR_INSUFFICIENT_MEMORY;
+        return ERR_MEMORY_ALLOCATION;
     }
 
     for (size_t i = 0; i < num; i++) {
         struct ItemDetails *currentItem = (struct ItemDetails *)malloc(sizeof(struct ItemDetails));
         if (currentItem == NULL) {
             fclose(fp);
-            return ERR_INSUFFICIENT_MEMORY;
+            return ERR_MEMORY_ALLOCATION;
         }
 
         if (fread(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
