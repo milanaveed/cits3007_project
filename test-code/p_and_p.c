@@ -53,7 +53,7 @@ Additionally, since the code will be part of a library – rather than being an 
 //* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
 // TODO: fflush
-//* done, checked, not improved
+//* done, checked, passed moodle, not improved
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -120,7 +120,7 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const 
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
-//* done, checked, not improved
+//* done, checked, passed moodle, not improved
 int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
