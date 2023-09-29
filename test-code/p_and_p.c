@@ -53,7 +53,6 @@ Additionally, since the code will be part of a library – rather than being an 
 //* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
 // TODO: fflush
-//* done, checked, not improved
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -120,7 +119,6 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const 
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
-//* done, checked, not improved
 int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -201,7 +199,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
 
 So, after this line of code, `currentItem` is a pointer to the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.*/
 
-//* done, checked, not improved
+//* done, not improved
 /**
  * @brief  Checks whether a string constitutes a valid name field, which requires the characters contained to have a graphical representation (as defined by the C function isgraph). No other characters are permitted. This means that names cannot contain (for instance) whitespace or control characters.
  * @note   A name field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
@@ -224,7 +222,7 @@ int isValidName(const char *str) {
     return 1;
 }
 
-//* done, checked, not improved
+//* done, not improved
 /**
  * @brief  Checks whether a string constitutes a valid multi-word field, which may contain all the characters in a name field, and may also contain space characters (but the first and the last characters must not be spaces).
  * @note   A multi-word field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
