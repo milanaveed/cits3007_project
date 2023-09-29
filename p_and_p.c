@@ -64,7 +64,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    if (fwrite(&numItems, sizeof(size_t), 1, fp) != 1) {
+    if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_WRITE_FILE;
     }
@@ -72,7 +72,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     for (size_t i = 0; i < numItems; i++) {
         const struct ItemDetails *currentItem = &arr[i];
 
-        if(!isValidItemDetails(currentItem)){
+        if (!isValidItemDetails(currentItem)) {
             fclose(fp);
             return ERR_INVALID_TYPE;
         }
@@ -131,8 +131,8 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    size_t num;
-    if (fread(&num, sizeof(size_t), 1, fp) != 1) {
+    size_t num; //! Should I initialise it to 0? What is a better practice?
+    if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_READ_FILE;
     }
@@ -146,6 +146,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     for (size_t i = 0; i < num; i++) {
         struct ItemDetails *currentItem = (struct ItemDetails *)malloc(sizeof(struct ItemDetails));
         if (currentItem == NULL) {
+            free(*ptr);
             fclose(fp);
             return ERR_MEMORY_ALLOCATION;
         }
@@ -183,7 +184,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     }
 
     *numItems = num;
-    fflush(fp);  //? when should i call fflush()?
+    fflush(fp); //? when should i call fflush()?
     fclose(fp);
     return 0;
 }
@@ -297,10 +298,10 @@ int isValidCharacter(const struct Character *c) {
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
- * @param  *arr:
- * @param  numItems:
+ * @param  *arr: An array of characters.
+ * @param  numItems: The number of Character structs.
  * @param  fd: A file descriptor.
- * @retval
+ * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveCharacters(struct Character *arr, size_t numItems, int fd) {
     return 0;
@@ -309,13 +310,95 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
 /**
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
- * @param  **ptr:
- * @param  *numItems:
- * @param  fd:
- * @retval
+ * @param  **ptr: A pointer to a pointer to characters.
+ * @param  *numItems: The address of a size_t.
+ * @param  fd: A file descriptor.
+ * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
-    return 0;
+    if (fd < 0) {
+        return ERR_INVALID_FD;
+    }
+
+    FILE *fp = fdopen(fd, "rb");
+    if (fp == NULL) {
+        return ERR_OPEN_FILE;
+    }
+
+    size_t num;
+    if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
+        fclose(fp);
+        return ERR_READ_FILE;
+    }
+
+    *ptr = (struct Character *)malloc(num * sizeof(struct Character));
+    if (*ptr == NULL) {
+        fclose(fp);
+        return ERR_MEMORY_ALLOCATION;
+    }
+
+    for (size_t i = 0; i < num; ++i) {
+        struct Character currentCharacter;
+
+        if(fread(&currentCharacter, sizeof(struct Character), 1, fp)!=1){
+            fclose(fp);
+            free(*ptr);
+            return ERR_READ_FILE;
+        }
+
+        if(!isValidCharacter(&currentCharacter)){
+            fclose(fp);
+            free(*ptr);
+            return ERR_INVALID_TYPE;
+        }
+        // struct Character *currentCharacter = (struct Character *)malloc(sizeof(struct Character));
+        // if (currentCharacter == NULL) {
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_MEMORY_ALLOCATION;
+        // }
+
+        // if (fread(&currentCharacter->characterID, sizeof(uint64_t), 1, fp) != 1) {
+        //     free(currentCharacter);
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_READ_FILE;
+        // }
+
+        // if (fread(&currentCharacter->socialClass, sizeof(enum CharacterSocialClass), 1, fp) != 1) {
+        //     free(currentCharacter);
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_READ_FILE;
+        // }
+
+        // if (fread(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        //     free(currentCharacter);
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_READ_FILE;
+        // }
+
+        // if (fread(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        //     free(currentCharacter);
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_READ_FILE;
+        // }
+
+        // if (fread(&currentCharacter->inventorySize, sizeof(size_t), 1, fp) != 1) {
+        //     free(currentCharacter);
+        //     free(*ptr);
+        //     fclose(fp);
+        //     return ERR_READ_FILE;
+        // }
+
+        // struct ItemCarried *inv = (struct ItemCarried *)malloc(MAX_ITEMS * sizeof(struct ItemCarried));
+
+
+    }
+
+    return SUCCESS;
 }
 
 /**
