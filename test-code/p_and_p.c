@@ -20,7 +20,7 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 
 // TODO: Finish first, then improve
 //* pay attention to type specifier: size_t or uint64_t
-//* compile with gcc -I.
+//* compile with gcc -I to look for header files
 //* write a fairly brief documentation block: when documenting, we can assume the reader is familiar with the file format and the struct types
 //* [FILE* and file descriptor read/write performance](https://stackoverflow.com/questions/17524512/file-and-file-descriptor-read-write-performance/17524609#17524609)
 //* will get low mark if too many comments. Comments should be used to explain what is not in the code
@@ -162,7 +162,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
 }
 
 /*
-* Let's break down the expression `struct ItemDetails *currentItem = &(*ptr)[i];` step by step:
+ Let's break down the expression `struct ItemDetails *currentItem = &(*ptr)[i];` step by step:
 
 1. **`(*ptr)`**: `ptr` is a pointer to a pointer to `struct ItemDetails`. When you dereference `ptr` with `*ptr`, you get a pointer to `struct ItemDetails`.
 
@@ -183,7 +183,6 @@ So, after this line of code, `currentItem` is a pointer to the `i`-th `struct It
  */
 int isValidName(const char *str) {
     size_t length = strlen(str);
-
     if (length >= DEFAULT_BUFFER_SIZE) {
         return 0;
     }
@@ -223,7 +222,7 @@ int isValidMultiword(const char *str) {
     return 1;
 }
 
-//* done, not improved
+//* done, passed moodle not improved
 /**
  * @brief  Checks whether an ItemDetails struct is valid.
  * @note   A valid ItemDetails format means that its name and desc fields are valid name and multi-word fields, respectively.
@@ -238,7 +237,7 @@ int isValidItemDetails(const struct ItemDetails *id) {
     return 1;
 }
 
-//* done, not improved
+//* done, passed moodle, not improved
 /**
  * @brief  Checks whether a Character struct is valid.
  * @note   A Character struct is valid iff: the profession field is a valid name field, the name field is a valid multi-word field, the total number of items carried does not exceed MAX_ITEMS, and inventorySize is less than or equal to MAX_ITEMS.
@@ -247,14 +246,10 @@ int isValidItemDetails(const struct ItemDetails *id) {
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidCharacter(const struct Character *c) {
-    // Check if the profession field is a valid name field
-    // Check if the name field is a valid multi-word field
-    // Check if inventorySize is less than or equal to MAX_ITEMS
     if (!isValidName(c->profession) || !isValidMultiword(c->name) || c->inventorySize > MAX_ITEMS) {
         return 0;
     }
 
-    // Check if the total number of items carried does not exceed MAX_ITEMS
     size_t n_items = 0;
     for (size_t i = 0; i < c->inventorySize; i++) {
         n_items += c->inventory[i].quantity;
@@ -321,6 +316,7 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
+//* done, not checked yet
 int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
