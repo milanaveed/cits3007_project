@@ -11,6 +11,9 @@
 #define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_WRITE_FILE 1
 #define ERR_READ_FILE 1
+#define ERR_STRING_TOO_LONG 1
+#define ERR_INVALID_TYPE 1
+#define ERR_INVALID_FD 1
 // #define ERR_
 
 //? Do we need this?
@@ -52,6 +55,10 @@ Additionally, since the code will be part of a library – rather than being an 
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
 // TODO: fflush
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
+    if (fd < 0) {
+        return ERR_INVALID_FD;
+    }
+
     FILE *fp = fdopen(fd, "wb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
@@ -63,24 +70,25 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     }
 
     for (size_t i = 0; i < numItems; i++) {
-        const struct ItemDetails *current_item = &arr[i];
+        const struct ItemDetails *currentItem = &arr[i];
 
-        if (fwrite(&(current_item->itemID), sizeof(uint64_t), 1, fp) != 1) {
+        if (fwrite(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
 
-        if (fwrite(current_item->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fwrite(currentItem->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
 
-        if (fwrite(current_item->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+        if (fwrite(currentItem->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
     }
 
+    fflush(fp);
     fclose(fp);
 
     return SUCCESS;
@@ -108,27 +116,84 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const 
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
 int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
+    if (fd < 0) {
+        return ERR_INVALID_FD;
+    }
+
     FILE *fp = fdopen(fd, "rb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
     }
 
-    if (fread(numItems, sizeof(size_t), 1, fp) != 1) {
+    size_t num;
+    if (fread(&num, sizeof(size_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_READ_FILE;
     }
 
-    *ptr = malloc(*numItems * sizeof(struct ItemDetails));
+    *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
     if (*ptr == NULL) {
         fclose(fp);
         return ERR_INSUFFICIENT_MEMORY;
     }
 
-    //TODO:
-    // if (fread())
+    for (size_t i = 0; i < num; i++) {
+        struct ItemDetails *currentItem = (struct ItemDetails *)malloc(sizeof(struct ItemDetails));
+        if (currentItem == NULL) {
+            fclose(fp);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
 
-        return 0;
+        if (fread(&(currentItem->itemID), sizeof(uint64_t), 1, fp) != 1) {
+            free(currentItem);
+            free(*ptr);
+            fclose(fp);
+            return ERR_READ_FILE;
+        }
+
+        if (fread(currentItem->itemName, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+            free(currentItem);
+            free(*ptr);
+            fclose(fp);
+            return ERR_READ_FILE;
+        }
+
+        if (fread(currentItem->itemDesc, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
+            free(currentItem);
+            free(*ptr);
+            fclose(fp);
+            return ERR_READ_FILE;
+        }
+
+        if (!isValidItemDetails(currentItem)) {
+            free(currentItem);
+            free(*ptr);
+            fclose(fp);
+            return ERR_INVALID_TYPE;
+        }
+
+        (*ptr)[i] = *currentItem; //? just get a copy of the content pointed to by currentItem
+        free(currentItem);        //? is safe to call
+    }
+
+    *numItems = num;
+    fflush(fp);  //? when should i call fflush()?
+    fclose(fp);
+    return 0;
 }
+
+/*
+* Let's break down the expression `struct ItemDetails *currentItem = &(*ptr)[i];` step by step:
+
+1. **`(*ptr)`**: `ptr` is a pointer to a pointer to `struct ItemDetails`. When you dereference `ptr` with `*ptr`, you get a pointer to `struct ItemDetails`.
+
+2. **`(*ptr)[i]`**: Now that we have a pointer to `struct ItemDetails`, we can treat it as an array of `struct ItemDetails`. We use the indexing operator `[]` to access the `i`-th element of this array. So, `(*ptr)[i]` gives us the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.
+
+3. **`&(*ptr)[i]`**: Next, we take the address of the `i`-th `struct ItemDetails` object using the address-of operator `&`. This gives us a pointer to the `i`-th `struct ItemDetails` object.
+
+4. **`struct ItemDetails *currentItem = &(*ptr)[i];`**: Finally, we assign the address of the `i`-th `struct ItemDetails` object to the pointer `currentItem` of type `struct ItemDetails *`.
+
+So, after this line of code, `currentItem` is a pointer to the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.*/
 
 //* done, not improved
 /**
@@ -138,32 +203,17 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
  * @retval Returns 1 if it is a valid name field, and 0 if not.
  */
 int isValidName(const char *str) {
-    // check the length (at most DEFAULT_BUFFER_SIZE-1) and characters
-    //? Should we use the strlen() to get the length of the string, or should we count it manually? Which is a better practice, way 1 or way 2?
-    //* way 1:
     size_t length = strlen(str);
+
     if (length >= DEFAULT_BUFFER_SIZE) {
         return 0;
     }
+
     for (size_t i = 0; i < length; i++) {
         if (!isgraph(str[i])) {
             return 0;
         }
     }
-
-    //* way 2:
-    // char *p = str;
-    // size_t length = 0;
-    // while (*p) {
-    //     if (!isgraph(*p)) {
-    //         return 0;
-    //     }
-    //     length++;
-    //     if (length >= DEFAULT_BUFFER_SIZE) {
-    //         return 0;
-    //     }
-    //     p++;
-    // }
 
     return 1;
 }
