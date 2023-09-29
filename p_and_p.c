@@ -186,7 +186,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     *numItems = num;
     fflush(fp); //? when should i call fflush()?
     fclose(fp);
-    return 0;
+    return SUCCESS;
 }
 
 /*
@@ -340,63 +340,26 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     for (size_t i = 0; i < num; ++i) {
         struct Character currentCharacter;
 
-        if(fread(&currentCharacter, sizeof(struct Character), 1, fp)!=1){
+        size_t elsRead = fread(&currentCharacter, sizeof(struct Character), 1, fp);
+
+        if (elsRead != 1) {
             fclose(fp);
             free(*ptr);
             return ERR_READ_FILE;
         }
 
-        if(!isValidCharacter(&currentCharacter)){
+        if (!isValidCharacter(&currentCharacter)) {
             fclose(fp);
             free(*ptr);
             return ERR_INVALID_TYPE;
         }
-        // struct Character *currentCharacter = (struct Character *)malloc(sizeof(struct Character));
-        // if (currentCharacter == NULL) {
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_MEMORY_ALLOCATION;
-        // }
 
-        // if (fread(&currentCharacter->characterID, sizeof(uint64_t), 1, fp) != 1) {
-        //     free(currentCharacter);
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_READ_FILE;
-        // }
-
-        // if (fread(&currentCharacter->socialClass, sizeof(enum CharacterSocialClass), 1, fp) != 1) {
-        //     free(currentCharacter);
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_READ_FILE;
-        // }
-
-        // if (fread(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-        //     free(currentCharacter);
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_READ_FILE;
-        // }
-
-        // if (fread(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1) {
-        //     free(currentCharacter);
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_READ_FILE;
-        // }
-
-        // if (fread(&currentCharacter->inventorySize, sizeof(size_t), 1, fp) != 1) {
-        //     free(currentCharacter);
-        //     free(*ptr);
-        //     fclose(fp);
-        //     return ERR_READ_FILE;
-        // }
-
-        // struct ItemCarried *inv = (struct ItemCarried *)malloc(MAX_ITEMS * sizeof(struct ItemCarried));
-
-
+        (*ptr)[i] = currentCharacter;
     }
+
+    *numItems = num;
+    fflush(fp);
+    fclose(fp);
 
     return SUCCESS;
 }
