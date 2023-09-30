@@ -2,18 +2,30 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #define SUCCESS 0
 #define ERR_OPEN_FILE 1
-#define ERR_MEMORY_ALLOCATION 1
+#define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_WRITE_FILE 1
 #define ERR_READ_FILE 1
 #define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
+#define ERR_NO_PERMISSION 2
+#define ERR_ACQUIRE_PERMISSION 2
+#define ERR_DROP_PERMISSION 2
+#define ERR_CLEAR_ENV 0
+#define ERR_DESERIALIZATION 1
+#define ERR_FORKING 0
 
 //? Do we need this?
 static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
@@ -24,10 +36,13 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 //* write a fairly brief documentation block: when documenting, we can assume the reader is familiar with the file format and the struct types
 //* [FILE* and file descriptor read/write performance](https://stackoverflow.com/questions/17524512/file-and-file-descriptor-read-write-performance/17524609#17524609)
 //* will get low mark if too many comments. Comments should be used to explain what is not in the code
-// TODO: sanitise things in and out
-//? when should we zero things out? By using memset?
 //* only submit this .c file
 //* Inline comments should not say what the code is doing – anyone who understands the programming language should be able to see that – but rather why it is doing it.
+// TODO: write secureLoad()
+// TODO: write a check test for loadCharacters()
+// TODO: enable all sanitizer flags
+// TODO: sanitise things in and out
+//? when should we zero things out? By using memset?
 
 /**
  * Requirments: Code should handle errors gracefully when reading or writing files – such errors include file open failures, insufficient memory, and file corruption.
@@ -36,9 +51,6 @@ Additionally, since the code will be part of a library – rather than being an 
 • never exit or abort, but instead return with an error value, unless the specification states otherwise.
 */
 
-/**
-  Once your validation functions are complete, you should incorporate them into loadItemDetails and saveItemDetails where applicable, and those functions should return an error if they encounter an invalid struct or file record.
- */
 /**
  * @brief  Serializes an array of ItemDetails structs. It should store the array using the ItemDetails file format.
  *
@@ -52,7 +64,6 @@ Additionally, since the code will be part of a library – rather than being an 
 //* use fread and fwrite
 //* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
-// TODO: fflush
 //* done, checked, passed moodle, not improved
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     if (fd < 0) {
@@ -123,7 +134,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    size_t num; //! Should I initialise it to 0? What is a better practice?
+    size_t num; //? Should I initialise it to 0? What is a better practice?
     if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
         fclose(fp);
         return ERR_READ_FILE;
@@ -132,7 +143,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
     if (*ptr == NULL) {
         fclose(fp);
-        return ERR_MEMORY_ALLOCATION;
+        return ERR_INSUFFICIENT_MEMORY;
     }
 
     for (size_t i = 0; i < num; i++) {
@@ -222,7 +233,7 @@ int isValidMultiword(const char *str) {
     return 1;
 }
 
-//* done, passed moodle not improved
+//* done, passed moodle, not improved
 /**
  * @brief  Checks whether an ItemDetails struct is valid.
  * @note   A valid ItemDetails format means that its name and desc fields are valid name and multi-word fields, respectively.
@@ -316,7 +327,7 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
-//* done, not checked yet
+//* done, not checked yet, no moodle test available, not improved
 int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
@@ -336,7 +347,7 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
     *ptr = (struct Character *)malloc(num * sizeof(struct Character));
     if (*ptr == NULL) {
         fclose(fp);
-        return ERR_MEMORY_ALLOCATION;
+        return ERR_INSUFFICIENT_MEMORY;
     }
 
     for (size_t i = 0; i < num; ++i) {
@@ -374,7 +385,66 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
  */
 //*check labs and forum (the setuid lab)
 // "We could start it as one process, and then one of them splits off, and it's the privileged bit, and the other one splits off, and it's the unprivileged bit"
+//"In the project for CITS3007, it will be up to you to ensure you follow good secure coding practices – dropping privileges when appropriate, calling fstat() instead of stat(), and checking the return values of functions that can fail – and following these practices will comprise a significant proportion of your mark."
 int secureLoad(const char *filepath) {
+    // TODO: validate the input is a legal filepath
+
+    uid_t originalEuid = geteuid();
+
+    // TODO: Sanitise envrionment variables: How to sanitise the environment variables properly before spawning a child process? What environment variables should be retained?
+    if (clearenv() != 0) {
+        return ERR_CLEAR_ENV;
+    }
+
+    // if (setenv("PATH", "/usr/bin:/bin", 1) != 0) {
+    //     return ERR_CLEAR_ENV;
+    // }
+
+    struct ItemDetails **ptr; //? How should we initialise that?
+    size_t numItems;
+
+    // spawning a child process
+    pid_t pid = fork();
+    if (pid < 0) {
+        return ERR_FORKING;
+    } else if (pid == 0) { // child process (privileged)
+        //? Where should we use fstat()?
+        struct passwd *userInfo = getpwnam("pitchpoltadmin");
+        if (userInfo == NULL) {
+            return ERR_NO_PERMISSION;
+        }
+
+        // check permissions, acquire permissions to open the database
+        if (originalEuid != userInfo->pw_uid) {
+            if (seteuid(userInfo->pw_uid) != 0) {
+                return ERR_ACQUIRE_PERMISSION;
+            }
+        }
+
+        int fd = open(filepath, O_RDONLY);
+        if (fd == -1) {
+            return ERR_OPEN_FILE;
+        }
+
+        // drop privileges
+        if (seteuid(originalEuid) != 0) {
+            close(fd);
+            return ERR_DROP_PERMISSION;
+        }
+
+        if (loadItemDetails(ptr, &numItems, fd) != 0) {
+            close(fd);
+            return ERR_DESERIALIZATION;
+        }
+
+        close(fd);
+    } else {
+        // parent process (unprivileged)
+        // todo: wait for child process
+
+        playGame(*ptr, numItems);
+    }
+
     return 0;
 }
 
