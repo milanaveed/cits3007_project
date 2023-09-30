@@ -20,9 +20,12 @@
 #define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
-#define ERR_NO_PERMISSION 2
+#define ERR_NO_USER_INFO 0
 #define ERR_ACQUIRE_PERMISSION 2
 #define ERR_DROP_PERMISSION 2
+#define ERR_RETRIEVE_FD_INFO 0
+#define ERR_FD_USERID 2
+#define ERR_FD_EXECUTE_PERMISSION 2
 #define ERR_CLEAR_ENV 0
 #define ERR_DESERIALIZATION 1
 #define ERR_FORKING 0
@@ -386,8 +389,13 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
 //*check labs and forum (the setuid lab)
 // "We could start it as one process, and then one of them splits off, and it's the privileged bit, and the other one splits off, and it's the unprivileged bit"
 //"In the project for CITS3007, it will be up to you to ensure you follow good secure coding practices – dropping privileges when appropriate, calling fstat() instead of stat(), and checking the return values of functions that can fail – and following these practices will comprise a significant proportion of your mark."
+//"Traditionally on Unix-like systems, running processes can be divided into two categories:
+// - privileged processes, which have an effective user ID of 0(that is, root)
+// - unprivileged processes – all others."
+// https://cits3007.github.io/labs/lab04-solutions.html
+// https://cits3007.github.io/labs/lab07-solutions.html
 int secureLoad(const char *filepath) {
-    // TODO: validate the input is a legal filepath
+    // TODO: validate if the input is a decent filepath
 
     uid_t originalEuid = geteuid();
 
@@ -408,10 +416,9 @@ int secureLoad(const char *filepath) {
     if (pid < 0) {
         return ERR_FORKING;
     } else if (pid == 0) { // child process (privileged)
-        //? Where should we use fstat()?
         struct passwd *userInfo = getpwnam("pitchpoltadmin");
         if (userInfo == NULL) {
-            return ERR_NO_PERMISSION;
+            return ERR_NO_USER_INFO;
         }
 
         // check permissions, acquire permissions to open the database
@@ -427,9 +434,24 @@ int secureLoad(const char *filepath) {
         }
 
         // drop privileges
-        if (seteuid(originalEuid) != 0) {
+        if (setuid(getuid()) != 0) {
             close(fd);
             return ERR_DROP_PERMISSION;
+        }
+
+        // check the fd UID and mode by fstat(), check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin.
+        struct stat fileStat;
+        if (fstat(fd, &fileStat) != 0) {
+            close(fd);
+            return ERR_RETRIEVE_FD_INFO;
+        }
+        if (fileStat.st_uid != userInfo->pw_uid) {
+            close(fd);
+            return ERR_FD_USERID;
+        }
+        if(!(fileStat.st_mode & S_IXUSR)){
+            close(fd);
+            return ERR_FD_EXECUTE_PERMISSION;
         }
 
         if (loadItemDetails(ptr, &numItems, fd) != 0) {
@@ -440,8 +462,8 @@ int secureLoad(const char *filepath) {
         close(fd);
     } else {
         // parent process (unprivileged)
-        // todo: wait for child process
-
+        // wait for child process
+        wait(NULL);
         playGame(*ptr, numItems);
     }
 
