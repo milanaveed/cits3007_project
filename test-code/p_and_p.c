@@ -19,6 +19,7 @@
 #define ERR_READ_FILE 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
+#define ERR_NULL_POINTER 1
 #define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
@@ -49,6 +50,7 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 // TODO: enable all sanitizer flags
 // TODO: try fuzzing
 // TODO: sanitise things in and out
+// todo: be careful with memory leak
 //? When should we zero things out? By using memset?
 
 /**
@@ -75,6 +77,10 @@ Additionally, since the code will be part of a library – rather than being an 
 int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
+    }
+
+    if (arr == NULL) {
+        return ERR_NULL_POINTER;
     }
 
     FILE *fp = fdopen(fd, "wb");
@@ -149,12 +155,16 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         return ERR_INVALID_FD;
     }
 
+    if (ptr == NULL) {
+        return ERR_NULL_POINTER;
+    }
+
     FILE *fp = fdopen(fd, "rb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
     }
 
-    size_t num; //? Should I initialise it to 0? What is a better practice?
+    size_t num = 0;
     if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
@@ -198,6 +208,9 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
+    if (numItems == NULL) {
+        return ERR_NULL_POINTER;
+    }
     *numItems = num;
 
     if (fflush(fp) != 0) { //? When should I call fflush?
@@ -337,6 +350,10 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
         return ERR_WRITE_FILE;
     }
 
+    if (arr == NULL) {
+        return ERR_NULL_POINTER;
+    }
+
     for (size_t i = 0; i < numItems; i++) {
         struct Character currentCharacter = arr[i];
 
@@ -388,12 +405,16 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    size_t num;
+    size_t num = 0;
     if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
         }
         return ERR_READ_FILE;
+    }
+
+    if (ptr == NULL) {
+        return ERR_NULL_POINTER;
     }
 
     *ptr = (struct Character *)malloc(num * sizeof(struct Character));
@@ -413,7 +434,7 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
             if (fclose(fp) != 0) {
                 return ERR_CLOSE_FILE;
             }
-            memset(*ptr, 0, sizeof(num*sizeof(struct Character)));
+            memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
             return ERR_READ_FILE;
         }
@@ -432,6 +453,9 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
         memset(&currentCharacter, 0, sizeof(struct Character));
     }
 
+    if (numItems == NULL) {
+        return ERR_NULL_POINTER;
+    }
     *numItems = num;
 
     if (fflush(fp) != 0) { //? When should I call fflush?
@@ -461,6 +485,9 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
 // https://cits3007.github.io/labs/lab07-solutions.html
 int secureLoad(const char *filepath) {
     // TODO: validate if the input is a decent filepath
+    if (filepath == NULL) {
+        return 0;
+    }
 
     uid_t originalEuid = geteuid();
 
