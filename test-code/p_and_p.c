@@ -17,6 +17,8 @@
 #define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_WRITE_FILE 1
 #define ERR_READ_FILE 1
+#define ERR_CLOSE_FILE 1
+#define ERR_FFLUSH 1
 #define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
@@ -29,6 +31,7 @@
 #define ERR_CLEAR_ENV 0
 #define ERR_DESERIALIZATION 1
 #define ERR_FORKING 0
+#define ERR_CLOSE_FD 0
 
 //? Do we need this?
 static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
@@ -80,7 +83,9 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     }
 
     if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_WRITE_FILE;
     }
 
@@ -88,24 +93,31 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
         struct ItemDetails currentItem = arr[i];
 
         if (!isValidItemDetails(&currentItem)) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_INVALID_TYPE;
         }
 
         size_t elsWritten = fwrite(&currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsWritten != 1) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_WRITE_FILE;
         }
 
         memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
-    fflush(fp); //? When should I call fflush?
+    if (fflush(fp) != 0) { //? When should I call fflush?
+        return ERR_FFLUSH;
+    }
 
-    //? Should I check if I close the fp or fd successfully?
-    fclose(fp);
+    if (fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;
+    }
 
     return SUCCESS;
 }
@@ -144,13 +156,17 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
 
     size_t num; //? Should I initialise it to 0? What is a better practice?
     if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_READ_FILE;
     }
 
     *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
     if (*ptr == NULL) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_INSUFFICIENT_MEMORY;
     }
 
@@ -160,14 +176,18 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         size_t elsRead = fread(&currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsRead != 1) {
-            fclose(fp);
-            memset(*ptr, 0, num*sizeof(struct ItemDetails));
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
+            memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
             return ERR_READ_FILE;
         }
 
         if (!isValidItemDetails(&currentItem)) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
             return ERR_INVALID_TYPE;
@@ -179,8 +199,14 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
     }
 
     *numItems = num;
-    fflush(fp); //? when should i call fflush()?
-    fclose(fp);
+
+    if (fflush(fp) != 0) { //? When should I call fflush?
+        return ERR_FFLUSH;
+    }
+
+    if (fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;
+    }
     return SUCCESS;
 }
 
@@ -305,7 +331,9 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
     }
 
     if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_WRITE_FILE;
     }
 
@@ -313,20 +341,30 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
         struct Character currentCharacter = arr[i];
 
         if (!isValidCharacter(&currentCharacter)) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_INVALID_TYPE;
         }
 
         size_t elsWritten = fwrite(&currentCharacter, sizeof(struct Character), 1, fp);
 
         if (elsWritten != 1) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_WRITE_FILE;
         }
+
+        memset(&currentCharacter, 0, sizeof(struct Character));
     }
 
-    fflush(fp);
-    fclose(fp);
+    if (fflush(fp) != 0) {
+        return ERR_FFLUSH;
+    }
+    if (fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;
+    }
 
     return SUCCESS;
 }
@@ -352,13 +390,17 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
 
     size_t num;
     if (fread(&num, sizeof(uint64_t), 1, fp) != 1) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_READ_FILE;
     }
 
     *ptr = (struct Character *)malloc(num * sizeof(struct Character));
     if (*ptr == NULL) {
-        fclose(fp);
+        if (fclose(fp) != 0) {
+            return ERR_CLOSE_FILE;
+        }
         return ERR_INSUFFICIENT_MEMORY;
     }
 
@@ -368,23 +410,37 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
         size_t elsRead = fread(&currentCharacter, sizeof(struct Character), 1, fp);
 
         if (elsRead != 1) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
+            memset(*ptr, 0, sizeof(num*sizeof(struct Character)));
             free(*ptr);
             return ERR_READ_FILE;
         }
 
         if (!isValidCharacter(&currentCharacter)) {
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
+            memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
             return ERR_INVALID_TYPE;
         }
 
         (*ptr)[i] = currentCharacter;
+
+        memset(&currentCharacter, 0, sizeof(struct Character));
     }
 
     *numItems = num;
-    fflush(fp);
-    fclose(fp);
+
+    if (fflush(fp) != 0) { //? When should I call fflush?
+        return ERR_FFLUSH;
+    }
+
+    if (fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;
+    }
 
     return SUCCESS;
 }
@@ -444,31 +500,43 @@ int secureLoad(const char *filepath) {
 
         // drop privileges
         if (setuid(getuid()) != 0) {
-            close(fd);
+            if (close(fd) != 0) {
+                return ERR_CLOSE_FD;
+            }
             return ERR_DROP_PERMISSION;
         }
 
         // check the fd UID and mode by fstat(), check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin.
         struct stat fileStat;
         if (fstat(fd, &fileStat) != 0) {
-            close(fd);
+            if (close(fd) != 0) {
+                return ERR_CLOSE_FD;
+            }
             return ERR_RETRIEVE_FD_INFO;
         }
         if (fileStat.st_uid != userInfo->pw_uid) {
-            close(fd);
+            if (close(fd) != 0) {
+                return ERR_CLOSE_FD;
+            }
             return ERR_FD_USERID;
         }
-        if(!(fileStat.st_mode & S_IXUSR)){
-            close(fd);
+        if (!(fileStat.st_mode & S_IXUSR)) {
+            if (close(fd) != 0) {
+                return ERR_CLOSE_FD;
+            }
             return ERR_FD_EXECUTE_PERMISSION;
         }
 
         if (loadItemDetails(ptr, &numItems, fd) != 0) {
-            close(fd);
+            if (close(fd) != 0) {
+                return ERR_CLOSE_FD;
+            }
             return ERR_DESERIALIZATION;
         }
 
-        close(fd);
+        if (close(fd) != 0) {
+            return ERR_CLOSE_FD;
+        }
     } else {
         // parent process (unprivileged)
         // wait for child process
