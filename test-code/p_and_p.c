@@ -44,8 +44,9 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 // TODO: write secureLoad()
 // TODO: write a check test for loadCharacters()
 // TODO: enable all sanitizer flags
+// TODO: try fuzzing
 // TODO: sanitise things in and out
-//? when should we zero things out? By using memset?
+//? When should we zero things out? By using memset?
 
 /**
  * Requirments: Code should handle errors gracefully when reading or writing files – such errors include file open failures, insufficient memory, and file corruption.
@@ -84,7 +85,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
     }
 
     for (size_t i = 0; i < numItems; i++) {
-        const struct ItemDetails currentItem = arr[i];
+        struct ItemDetails currentItem = arr[i];
 
         if (!isValidItemDetails(&currentItem)) {
             fclose(fp);
@@ -97,9 +98,13 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
             fclose(fp);
             return ERR_WRITE_FILE;
         }
+
+        memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
-    fflush(fp);
+    fflush(fp); //? When should I call fflush?
+
+    //? Should I check if I close the fp or fd successfully?
     fclose(fp);
 
     return SUCCESS;
@@ -156,17 +161,21 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
 
         if (elsRead != 1) {
             fclose(fp);
+            memset(*ptr, 0, num*sizeof(struct ItemDetails));
             free(*ptr);
             return ERR_READ_FILE;
         }
 
         if (!isValidItemDetails(&currentItem)) {
             fclose(fp);
+            memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
             return ERR_INVALID_TYPE;
         }
 
         (*ptr)[i] = currentItem;
+
+        memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
     *numItems = num;
@@ -464,7 +473,7 @@ int secureLoad(const char *filepath) {
         // parent process (unprivileged)
         // wait for child process
         wait(NULL);
-        playGame(*ptr, numItems);
+        // playGame(*ptr, numItems);
     }
 
     return 0;
