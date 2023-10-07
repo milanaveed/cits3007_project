@@ -18,238 +18,256 @@
 
 #include "test_utils.h"
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 // useful if you want to coredump
 // yourself -- see `man raise`
-// #include <signal.h>
+//#include <signal.h>
 
-int open_with_fileno(const char *infile_path) {
-    FILE *ifp = fopen(infile_path, "rb");
-    if (ifp == NULL)
-        die_perror(__FILE__, __LINE__, "couldn't open file")
+int open_with_fileno(const char * infile_path) {
+  FILE *ifp = fopen(infile_path, "rb");
+  if (ifp == NULL)
+     die_perror(__FILE__, __LINE__, "couldn't open file")
 
-            int fd = fileno(ifp);
+  int fd = fileno(ifp);
 
-    if (fd == -1)
-        die_perror(__FILE__, __LINE__, "couldn't get fd for file");
+  if (fd == -1)
+    die_perror(__FILE__, __LINE__, "couldn't get fd for file");
 
-    return fd;
+  return fd;
 }
+
+
+
 
 #line 40
 // ^ this isn't a "real" test-case -- it's just used as an illustration
 // of how test-cases are written.
 
-START_TEST(arithmetic_works) {
-    // #line 44
-    //     int m = 3;
-    //     int n = 4;
-    //     int expected = 7;
-    //     int actual = m + n;
-    //     ck_assert_int_eq(actual, expected);
+// #test arithmetic_works
+//     int m = 3;
+//     int n = 4;
+//     int expected = 7;
+//     int actual = m + n;
+//     ck_assert_int_eq(actual, expected);
 
-    //////////////////////////////////////////////////
-    // Uncomment the following to see AddressSanitizer
-    // in action:
-    //////////////////////////////////////////////////
+//////////////////////////////////////////////////
+// Uncomment the following to see AddressSanitizer
+// in action:
+//////////////////////////////////////////////////
 
-    // #tcase deliberately_bad_testcase
+// #tcase deliberately_bad_testcase
 
-    // #test go_out_of_bounds
-    //    char buf[]            = "supercallifragilistic";
-    //    const size_t buf_size = sizeof(buf)/sizeof(buf[0]);
-    //    buf[buf_size-1]       = 'X';
-    //    // ^ buf is now not nul-terminated
-    //    size_t len            = strlen(buf);
-    //    // we expect the strlen-calculated size
-    //    // to be greater than 0.
-    //    ck_assert_uint_gt(len, 0);
+// #test go_out_of_bounds
+//    char buf[]            = "supercallifragilistic";
+//    const size_t buf_size = sizeof(buf)/sizeof(buf[0]);
+//    buf[buf_size-1]       = 'X';
+//    // ^ buf is now not nul-terminated
+//    size_t len            = strlen(buf);
+//    // we expect the strlen-calculated size
+//    // to be greater than 0.
+//    ck_assert_uint_gt(len, 0);
 
-    // #tcase loadItemDetails_items001_works_testcase
+// #tcase loadItemDetails_items001_works_testcase
 
-    // struct ItemDetails items001_expectedItems[] = {
-    //     {.itemID = 16602759796824695000UL, .name = "telescope", .desc = "brass with wooden tripod, 25x30x60 in."},
-    //     {.itemID = 13744653742375254000UL, .name = "rope", .desc = "hemp, 50 ft."},
-    //     {.itemID = 3400701144194139000UL, .name = "music-box", .desc = "brass gears with tin-plated case, 6 in., cursed"},
-    //     {.itemID = 734628920708863200UL, .name = "billiard-ball", .desc = "ivory, 2 in., set of 16 in wooden case, of mysterious origin"},
-    //     {.itemID = 14734865628490349000UL, .name = "sword-cane", .desc = "steel-bladed, concealed in Malacca-wood walking-cane, 36 in."},
-    //     {.itemID = 14324391740292973000UL, .name = "dynamite-stick", .desc = "with paper wrapping, 1 in. diameter x 12 in."},
-    //     {.itemID = 7562791295545618000UL, .name = "Epsom-salts", .desc = "6 oz, in glass bottle with cork stopper"},
-    //     {.itemID = 13658877949582529000UL, .name = "camp-stool", .desc = "canvas and wood, 12 in. seat height"},
-    //     {.itemID = 2390949174291477500UL, .name = "slide-rule", .desc = "wood and brass, 12 in., cursed"},
-    // };
+//    struct ItemDetails items001_expectedItems[] = {
+//      { .itemID = 16602759796824695000UL, .name = "telescope",      .desc = "brass with wooden tripod, 25x30x60 in." },
+//      { .itemID = 13744653742375254000UL, .name = "rope",           .desc = "hemp, 50 ft." },
+//      { .itemID = 3400701144194139000UL,  .name = "music-box",      .desc = "brass gears with tin-plated case, 6 in., cursed" },
+//      { .itemID = 734628920708863200UL,   .name = "billiard-ball",  .desc = "ivory, 2 in., set of 16 in wooden case, of mysterious origin" },
+//      { .itemID = 14734865628490349000UL, .name = "sword-cane",     .desc = "steel-bladed, concealed in Malacca-wood walking-cane, 36 in." },
+//      { .itemID = 14324391740292973000UL, .name = "dynamite-stick", .desc = "with paper wrapping, 1 in. diameter x 12 in." },
+//      { .itemID = 7562791295545618000UL,  .name = "Epsom-salts",    .desc = "6 oz, in glass bottle with cork stopper" },
+//      { .itemID = 13658877949582529000UL, .name = "camp-stool",     .desc = "canvas and wood, 12 in. seat height" },
+//      { .itemID = 2390949174291477500UL,  .name = "slide-rule",     .desc = "wood and brass, 12 in., cursed" },
+//    };
 
-    // size_t items001_expectedSize = sizeof(items001_expectedItems) / sizeof(struct ItemDetails);
+//    size_t items001_expectedSize = sizeof(items001_expectedItems)/sizeof(struct ItemDetails);
 
-    // #test loadItemDetails_items001_size_is_correct
 
-    // const char *infile_path = "test-data/items001.dat";
-    // int fd = open_with_fileno(infile_path);
+//#test loadItemDetails_items001_size_is_correct
+//
+//    const char * infile_path = "test-data/items001.dat";
+//    int fd = open_with_fileno(infile_path);
+//
+//    size_t numItems = 0;
+//    struct ItemDetails * itemsArr = NULL;
+//    int res = loadItemDetails(&itemsArr, &numItems, fd);
+//
+//    if (res != 0)
+//      die_perror(__FILE__, __LINE__, "loadItems failed");
+//
+//    // check we got the expected number of items
+//    ck_assert_msg(numItems == items001_expectedSize, "numItems should equal items001_expectedSize");
+//
+//    free(itemsArr);
+//
+//static_assert( sizeof(items001_expectedItems)/sizeof(struct ItemDetails) == 9 ,
+//               "expect correct number of file 001 items" );
+//
+//// test each item is correct, from idx 0 through to 8
+//// loop index is available as `_i`
+//
+// #test-loop (0,9) loadItemDetails_items001_items_are_equal
 
-    // size_t numItems = 0;
-    // struct ItemDetails *itemsArr = NULL;
-    // int res = loadItemDetails(&itemsArr, &numItems, fd);
+//    const char * infile_path = "test-data/items001.dat";
+//    int fd = open_with_fileno(infile_path);
 
-    // if (res != 0)
-    //     die_perror(__FILE__, __LINE__, "loadItems failed");
+//    size_t numItems = 0;
+//    struct ItemDetails * itemsArr = NULL;
+//    int res = loadItemDetails(&itemsArr, &numItems, fd);
 
-    // // check we got the expected number of items
-    // ck_assert_msg(numItems == items001_expectedSize, "numItems should equal items001_expectedSize");
+//    if (res != 0)
+//      die_perror(__FILE__, __LINE__, "loadItems failed");
 
-    // free(itemsArr);
+//    // pre-requisite: we got the expected number of items
+//    assert(numItems == items001_expectedSize);
 
-    // static_assert(sizeof(items001_expectedItems) / sizeof(struct ItemDetails) == 9,
-    //               "expect correct number of file 001 items");
+//    fprintf(stderr, "checking equality of item %d, with expected itemID %zu\n",
+//            _i, items001_expectedItems[_i].itemID
+//    );
+//    assert_itemDetails_are_equal(itemsArr + _i, &(items001_expectedItems[_i]));
 
-    // test each item is correct, from idx 0 through to 8
-    // loop index is available as `_i`
+//    free(itemsArr);
 
-    // #test-loop (0,9) loadItemDetails_items001_items_are_equal
+////////////////////////////////////////////////////////////
+////loadCharacter()
+////////////////////////////////////////////////////////////
 
-    // const char *infile_path = "test-data/items001.dat";
-    // int fd = open_with_fileno(infile_path);
+//#tcase loadCharacter_testcase
+//    struct ItemDetails items001_expectedCharacters[] = {
+//      { .characterID = 16602759796824690ULL, .socialClass = 0,      .profession = "brassjiowueiorn", .name="uiroew reiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
+//      { .characterID = 1660275979690ULL, .socialClass = 2,      .profession = "brassjiowuiyuiiorn", .name="uir oew reiwo", .inventorySize=2, .inventory={{ .itemID=8972845ULL, .quantity= 2}, {.itemID=972845ULL, .quantity= 1}} },
+//      { .characterID = 16602759796824690ULL, .socialClass = 4,      .profession = "brjiowueiorn", .name="uiroew eiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
+//    };
 
-    // size_t numItems = 0;
-    // struct ItemDetails *itemsArr = NULL;
-    // int res = loadItemDetails(&itemsArr, &numItems, fd);
+//     size_t items001_expectedSize = sizeof(items001_expectedCharacters)/sizeof(struct Character);
 
-    // if (res != 0)
-    //     die_perror(__FILE__, __LINE__, "loadItems failed");
+ //todo: 以下未修改   
 
-    // // pre-requisite: we got the expected number of items
-    // assert(numItems == items001_expectedSize);
+// #test loadItemDetails_items001_size_is_correct
 
-    // fprintf(stderr, "checking equality of item %d, with expected itemID %zu\n",
-    //         _i, items001_expectedItems[_i].itemID);
-    // assert_itemDetails_are_equal(itemsArr + _i, &(items001_expectedItems[_i]));
+//    const char * infile_path = "test-data/items001.dat";
+//    int fd = open_with_fileno(infile_path);
 
-    // free(itemsArr);
+//    size_t numItems = 0;
+//    struct ItemDetails * itemsArr = NULL;
+//    int res = loadItemDetails(&itemsArr, &numItems, fd);
 
-    //// ///////////////////////////////////////////////////////
-    //// // Uncomment the following if you have a isValidName()
-    //// // implementation to test:
-    //// ///////////////////////////////////////////////////////
-    ////
-    // #tcase isValidName_testcase
+//    if (res != 0)
+//      die_perror(__FILE__, __LINE__, "loadItems failed");
 
-    // // datatypes and data used for this testcase
+//    // check we got the expected number of items
+//    ck_assert_msg(numItems == items001_expectedSize, "numItems should equal items001_expectedSize");
 
-    // struct NameAndValidity {
-    //  char name[DEFAULT_BUFFER_SIZE];
-    //  int validity;
-    // };
+//    free(itemsArr);
 
-    // struct NameAndValidity isValidName_test_data[] = {
-    //  { .name = "a b", .validity = 0 },
-    //  { .name = "a-b", .validity = 1 },
-    //  { .name = "a'b", .validity = 1 }
-    // };
+//     static_assert( sizeof(items001_expectedItems)/sizeof(struct ItemDetails) == 9 ,
+//               "expect correct number of file 001 items" );
 
-    // #test isValidName_simple_case
-    //    const char *name = "bob";
-    //    int expected_result = 1;
-    //    int actual_result = isValidName(name);
-    //    ck_assert_int_eq(actual_result, expected_result);
 
-    // #test-loop (0,3) isValidName_more_cases
+//// ///////////////////////////////////////////////////////
+//// // Uncomment the following if you have a isValidName()
+//// // implementation to test:
+//// ///////////////////////////////////////////////////////
+////
+// #tcase isValidName_testcase
 
-    //    struct NameAndValidity nv = isValidName_test_data[_i];
-    //    const char *name = nv.name;
-    //    int expected_result = nv.validity;
-    //    int actual_result = isValidName(name);
-    //    ck_assert_int_eq(actual_result, expected_result);
+// // datatypes and data used for this testcase
 
-    /////////////////////////////////////////////////////////
-    // #tcase isValidMultiword_testcase
-    /////////////////////////////////////////////////////////
+// struct NameAndValidity {
+//  char name[DEFAULT_BUFFER_SIZE];
+//  int validity;
+// };
 
-    // struct MultiwordAndValidity {
-    //     char desc[DEFAULT_BUFFER_SIZE];
-    //     int validity;
-    // };
+// struct NameAndValidity isValidName_test_data[] = {
+//  { .name = "a b", .validity = 0 },
+//  { .name = "a-b", .validity = 1 },
+//  { .name = "a'b", .validity = 1 }
+// };
 
-    // struct MultiwordAndValidity isValidMultiword_test_data[] = {
-    //     {.desc = "a:b", .validity = 1},
-    //     {.desc = "a-b", .validity = 1},
-    //     {.desc = "a b", .validity = 1},
-    //     {.desc = " a b", .validity = 0},
-    //     {.desc = "ba ", .validity = 0},
-    //     {.desc = "b a ", .validity = 0},
-    // };
+// #test isValidName_simple_case
+//    const char *name = "bob";
+//    int expected_result = 1;
+//    int actual_result = isValidName(name);
+//    ck_assert_int_eq(actual_result, expected_result);
 
-    // // #test-loop (0,6) isValidMultiword_more_cases
-    // struct MultiwordAndValidity nw = isValidMultiword_test_data[_i];
-    // const char *desc = nw.desc;
-    // int expected_result = nw.validity;
-    // int actual_result = isValidMultiword(desc);
-    // ck_assert_int_eq(actual_result, expected_result);
+// #test-loop (0,3) isValidName_more_cases
 
-    /////////////////////////////////////////////////////////
-    //// Uncomment the following if you have a saveItemDetails()
-    //// implementation to test:
-    /////////////////////////////////////////////////////////
-    //
-    // #tcase saveItemDetails_testcase
-    //
-    // #test saveItemDetails_works
+//    struct NameAndValidity nv = isValidName_test_data[_i];
+//    const char *name = nv.name;
+//    int expected_result = nv.validity;
+//    int actual_result = isValidName(name);
+//    ck_assert_int_eq(actual_result, expected_result);
 
-       struct ItemDetails itemArr[] = {
-         { .itemID = 16602759796824695000UL, .name = "telescope",      .desc = "brass with wooden tripod, 25x30x60 in." }
-       };
-       size_t itemArr_size = sizeof(itemArr)/sizeof(struct ItemDetails);
+/////////////////////////////////////////////////////////
+//// Uncomment the following if you have a saveItemDetails()
+//// implementation to test:
+/////////////////////////////////////////////////////////
+//
 
-       char* file_conts = NULL;
-       size_t file_size = 0;
+START_TEST(saveItemDetails_works)
+{
+#line 207
 
-       FILE *ofp = fopen("tmp.dat", "wb");
-       assert(ofp != NULL);
-       int fd = fileno(ofp);
-       assert(fd != -1);
-       int res = saveItemDetails(itemArr, itemArr_size, fd);
-       assert(res == 0);
-       fclose(ofp);
+   struct ItemDetails itemArr[] = {
+     { .itemID = 16602759796824695000UL, .name = "telescope",      .desc = "brass with wooden tripod, 25x30x60 in." }
+   };
+   size_t itemArr_size = sizeof(itemArr)/sizeof(struct ItemDetails);
 
-       res = slurp_file("tmp.dat", "rb", &file_conts, &file_size);
-       assert(res == 0);
+   char* file_conts = NULL;
+   size_t file_size = 0;
 
-       const size_t expected_size = sizeof(uint64_t) + sizeof(struct ItemDetails);
+   FILE *ofp = fopen("tmp.dat", "wb");
+   assert(ofp != NULL);
+   int fd = fileno(ofp);
+   assert(fd != -1);
+   int res = saveItemDetails(itemArr, itemArr_size, fd);
+   assert(res == 0);
+   fclose(ofp);
 
-       fprintf(stderr, "%s:%d: actual file_size = %zu\n",
-               __FILE__, __LINE__, file_size);
+   res = slurp_file("tmp.dat", "rb", &file_conts, &file_size);
+   assert(res == 0);
 
-       ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+   const size_t expected_size = sizeof(uint64_t) + sizeof(struct ItemDetails);
 
-       // metadata should be `1`
-       size_t actual_read_metadata = 0;
-       memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-       ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+   fprintf(stderr, "%s:%d: actual file_size = %zu\n",
+           __FILE__, __LINE__, file_size);
 
-       // following the metadata should be our struct
-       struct ItemDetails actual_read_item = { 0 };
-       memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct ItemDetails));
-       ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+   ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
 
-       assert_itemDetails_are_equal(&actual_read_item, &(itemArr[0]));
+   // metadata should be `1`
+   size_t actual_read_metadata = 0;
+   memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+   ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
 
-       if (file_conts != NULL)
-         free(file_conts);
+   // following the metadata should be our struct
+   struct ItemDetails actual_read_item = { 0 };
+   memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct ItemDetails));
+   ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
 
-    // vim: syntax=c :
+   assert_itemDetails_are_equal(&actual_read_item, &(itemArr[0]));
+
+   if (file_conts != NULL)
+     free(file_conts);
+
+
+// vim: syntax=c :
 }
 END_TEST
 
-int main(void) {
+int main(void)
+{
     Suite *s1 = suite_create("p_and_p_tests");
-    TCase *tc1_1 = tcase_create("arithmetic_testcase");
+    TCase *tc1_1 = tcase_create("saveItemDetails_testcase");
     SRunner *sr = srunner_create(s1);
     int nf;
 
     suite_add_tcase(s1, tc1_1);
-    tcase_add_test(tc1_1, arithmetic_works);
+    tcase_add_test(tc1_1, saveItemDetails_works);
 
     srunner_run_all(sr, CK_ENV);
     nf = srunner_ntests_failed(sr);

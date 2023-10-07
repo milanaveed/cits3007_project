@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 /**
  * Stores the name and description for some item type
  * that can be carried by player characters as part of
@@ -19,10 +18,6 @@
  * laid out in the project specification for valid
  * ItemDetails structs.
  */
-//? Arran said in the lecture that, one of the best practises is making sure that we zero out all of the memory there before we write it to a file. What does that mean?
-// We have to zero out buffers when we write them to disc, what does zero out mean?
-// If we read something from disc, we assume that it's in a nice sanitised format and everything has been zeroed out. We want to be careful when we read stuff in. We validate it's in the format we expect.
-// Put in some static asserts and say, i'm about to assume that a size_t is 64 bits.
 struct ItemDetails {
   uint64_t itemID;
   char name[DEFAULT_BUFFER_SIZE];
@@ -78,13 +73,13 @@ struct Character {
   struct ItemCarried inventory[MAX_ITEMS];
 };
 
-int saveItemDetails(const struct ItemDetails* arr, size_t numItems, int fd);
+int saveItemDetails(const struct ItemDetails* arr, size_t nmemb, int fd);
 
-int saveItemDetailsToPath(const struct ItemDetails* arr, size_t numItems, const char* filename);
+int saveItemDetailsToPath(const struct ItemDetails* arr, size_t nmemb, const char* filename);
 
-int loadItemDetails(struct ItemDetails** ptr, size_t* numItems, int fd);
+int loadItemDetails(struct ItemDetails** ptr, size_t* nmemb, int fd);
 
-int loadItemDetailsFromPath(struct ItemDetails** ptr, size_t* numItems, const char* filename);
+int loadItemDetailsFromPath(struct ItemDetails** ptr, size_t* nmemb, const char* filename);
 
 int isValidName(const char * str);
 
@@ -94,13 +89,13 @@ int isValidItemDetails(const struct ItemDetails *id);
 
 int isValidCharacter(const struct Character *c);
 
-int saveCharacters(struct Character *arr, size_t numEls, int fd);
+int saveCharacters(struct Character *arr, size_t nmemb, int fd);
 
-int loadCharacters(struct Character** ptr, size_t* numELS, int fd);
+int loadCharacters(struct Character** ptr, size_t* nmemb, int fd);
 
 int secureLoad(const char *filepath);
 
-void playGame(struct ItemDetails* ptr, size_t numItems);
+void playGame(struct ItemDetails* ptr, size_t nmemb);
 
 #endif
 // P_AND_P_H

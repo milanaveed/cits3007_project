@@ -1,6 +1,5 @@
 #include <p_and_p.h>
 
-#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -15,12 +14,10 @@
 #define SUCCESS 0
 #define ERR_OPEN_FILE 1
 #define ERR_INSUFFICIENT_MEMORY 1
-#define ERR_WRITE_FILE 1
-#define ERR_READ_FILE 1
+#define ERR_FILE_CORRUPTION 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
 #define ERR_NULL_POINTER 1
-#define ERR_STRING_TOO_LONG 1
 #define ERR_INVALID_TYPE 1
 #define ERR_INVALID_FD 1
 #define ERR_NO_USER_INFO 0
@@ -34,9 +31,6 @@
 #define ERR_FORKING 0
 #define ERR_CLOSE_FD 0
 
-//? Do we need this?
-static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
-
 // TODO: Finish first, then improve
 //* pay attention to type specifier: size_t or uint64_t
 //* compile with gcc -I to look for header files
@@ -45,6 +39,10 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 //* will get low mark if too many comments. Comments should be used to explain what is not in the code
 //* only submit this .c file
 //* Inline comments should not say what the code is doing – anyone who understands the programming language should be able to see that – but rather why it is doing it.
+//? Arran said in the lecture that, one of the best practises is making sure that we zero out all of the memory there before we write it to a file. What does that mean?
+// We have to zero out buffers when we write them to disc
+// If we read something from disc, we assume that it's in a nice sanitised format and everything has been zeroed out. We want to be careful when we read stuff in. We validate it's in the format we expect.
+// Put in some static asserts and say, i'm about to assume that a size_t is 64 bits.
 // TODO: write secureLoad()
 // TODO: write a check test for loadCharacters()
 // TODO: enable all sanitizer flags
@@ -53,28 +51,25 @@ static_assert(sizeof(size_t) == 8, "we assume the size of size_t is 64bit.");
 // todo: be careful with memory leak
 //? When should we zero things out? By using memset?
 
-/**
- * Requirments: Code should handle errors gracefully when reading or writing files – such errors include file open failures, insufficient memory, and file corruption.
-Additionally, since the code will be part of a library – rather than being an executable – it should:
-• never print to standard out or standard error (unless the specification states otherwise); and
-• never exit or abort, but instead return with an error value, unless the specification states otherwise.
-*/
+// TODO: Don't close the file pointer
+// TODO: use fflush() instead of fclose(), check the help forum
+// TODO: use calloc instead of malloc
+// TODO: don't use memset?
 
 /**
- * @brief  Serializes an array of ItemDetails structs. It should store the array using the ItemDetails file format.
+ * @brief  Serializes an array of ItemDetails structs.
  *
  * @param  arr: An array of ItemDetails structs.
- * @param  numItems: Number of items.
+ * @param  nmemb: Number of items.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 //* take some structs as input, and produce a file that matches the specification given
 //*There's also a tip in this week's lab – when working with a FILE pointer obtained from a file descriptor, you might need to call fflush (see man fflush) to "write out" those buffers. The buffers are automatically written out when a FILE pointer is closed with fclose; but if you have a FILE pointer you created yourself (e.g. with fdopen) that just goes out of scope, then you may need to flush the buffers before your function exits.
 //* use fread and fwrite
-//* If you have a file descriptor, but need a FILE* (or vice versa) – check out the fdopen and fileno functions for converting between the two.
 //* If reading or writing from a FILE*, it’s a good idea to call fflush before finishing the current function – especially if the FILE* was obtained using fdopen, since it may contain buffered input or output that hasn’t yet been fully read or written."
 //* done, checked, passed moodle, not improved
-int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
+int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
     }
@@ -88,41 +83,29 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
+    if (fwrite(&nmemb, sizeof(uint64_t), 1, fp) != 1) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
         }
-        return ERR_WRITE_FILE;
+        return ERR_FILE_CORRUPTION;
     }
 
-    for (size_t i = 0; i < numItems; i++) {
+    for (size_t i = 0; i < nmemb; i++) {
         struct ItemDetails currentItem = arr[i];
 
         if (!isValidItemDetails(&currentItem)) {
-            if (fclose(fp) != 0) {
-                return ERR_CLOSE_FILE;
-            }
             return ERR_INVALID_TYPE;
         }
 
         size_t elsWritten = fwrite(&currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsWritten != 1) {
-            if (fclose(fp) != 0) {
-                return ERR_CLOSE_FILE;
-            }
-            return ERR_WRITE_FILE;
+            return ERR_FILE_CORRUPTION;
         }
-
-        memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
-    if (fflush(fp) != 0) { //? When should I call fflush?
+    if (fflush(fp) != 0) { //* enough and no need to close the fp
         return ERR_FFLUSH;
-    }
-
-    if (fclose(fp) != 0) {
-        return ERR_CLOSE_FILE;
     }
 
     return SUCCESS;
@@ -133,30 +116,35 @@ int saveItemDetails(const struct ItemDetails *arr, size_t numItems, int fd) {
  * @brief
  * @note
  * @param  arr:
- * @param  numItems:
+ * @param  nmemb:
  * @param  filename:
  * @retval
  */
-int saveItemDetailsToPath(const struct ItemDetails *arr, size_t numItems, const char *filename) {
+int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
+    int fd = open(filename, O_WRONLY);
+    if (fd == -1) {
+        return ERR_OPEN_FILE;
+    }
+
+    if (saveItemDetails(arr, nmemb, fd) == 1) {
+        return 1;
+    }
+
     return 0;
 }
 
 /**
- * @brief  Deserializes a file, including allocating enough memory to store the number of records contained in the file, and write the address of that memory to ptr. The memory is to be freed by the caller. Write all records contained in the file into the allocated memory. Write the number of records to numItems.
+ * @brief  Deserializes a file, including allocating enough memory to store the number of records contained in the file, and write the address of that memory to ptr. The memory is to be freed by the caller. Write all records contained in the file into the allocated memory. Write the number of records to nmemb.
  *
  * @param  ptr: The address of a pointer-to-ItemDetails struct.
- * @param  numItems: The address of a size_t.
+ * @param  nmemb: The address of a size_t.
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
 //* done, checked, passed moodle, not improved
-int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
+int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
-    }
-
-    if (ptr == NULL) {
-        return ERR_NULL_POINTER;
     }
 
     FILE *fp = fdopen(fd, "rb");
@@ -169,7 +157,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
         }
-        return ERR_READ_FILE;
+        return ERR_FILE_CORRUPTION;
     }
 
     *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
@@ -191,7 +179,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
             }
             memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
-            return ERR_READ_FILE;
+            return ERR_FILE_CORRUPTION;
         }
 
         if (!isValidItemDetails(&currentItem)) {
@@ -204,22 +192,17 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *numItems, int fd) {
         }
 
         (*ptr)[i] = currentItem;
-
-        memset(&currentItem, 0, sizeof(struct ItemDetails));
     }
 
-    if (numItems == NULL) {
+    if (nmemb == NULL) {
         return ERR_NULL_POINTER;
     }
-    *numItems = num;
+    *nmemb = num;
 
-    if (fflush(fp) != 0) { //? When should I call fflush?
+    if (fflush(fp) != 0) {
         return ERR_FFLUSH;
     }
 
-    if (fclose(fp) != 0) {
-        return ERR_CLOSE_FILE;
-    }
     return SUCCESS;
 }
 
@@ -328,12 +311,12 @@ int isValidCharacter(const struct Character *c) {
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
  * @param  *arr: An array of characters.
- * @param  numItems: The number of Character structs.
+ * @param  nmemb: The number of Character structs.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 //* done, passed moodle, not improved
-int saveCharacters(struct Character *arr, size_t numItems, int fd) {
+int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
     }
@@ -343,18 +326,18 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
         return ERR_OPEN_FILE;
     }
 
-    if (fwrite(&numItems, sizeof(uint64_t), 1, fp) != 1) {
+    if (fwrite(&nmemb, sizeof(uint64_t), 1, fp) != 1) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
         }
-        return ERR_WRITE_FILE;
+        return ERR_FILE_CORRUPTION;
     }
 
     if (arr == NULL) {
         return ERR_NULL_POINTER;
     }
 
-    for (size_t i = 0; i < numItems; i++) {
+    for (size_t i = 0; i < nmemb; i++) {
         struct Character currentCharacter = arr[i];
 
         if (!isValidCharacter(&currentCharacter)) {
@@ -370,10 +353,8 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
             if (fclose(fp) != 0) {
                 return ERR_CLOSE_FILE;
             }
-            return ERR_WRITE_FILE;
+            return ERR_FILE_CORRUPTION;
         }
-
-        memset(&currentCharacter, 0, sizeof(struct Character));
     }
 
     if (fflush(fp) != 0) {
@@ -386,16 +367,29 @@ int saveCharacters(struct Character *arr, size_t numItems, int fd) {
     return SUCCESS;
 }
 
+int saveCharactersToPath(struct Character *arr, size_t nmemb, const char *filename) {
+    int fd = open(filename, O_WRONLY);
+    if (fd == -1) {
+        return ERR_OPEN_FILE;
+    }
+
+    if (saveCharacters(arr, nmemb, fd) == 1) {
+        return 1;
+    }
+
+    return 0;
+}
+
 /**
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
  * @param  **ptr: A pointer to a pointer to characters.
- * @param  *numItems: The address of a size_t.
+ * @param  *nmemb: The address of a size_t.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 //* done, not checked yet, no moodle test available, not improved
-int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
+int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     if (fd < 0) {
         return ERR_INVALID_FD;
     }
@@ -410,7 +404,7 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
         }
-        return ERR_READ_FILE;
+        return ERR_FILE_CORRUPTION;
     }
 
     if (ptr == NULL) {
@@ -436,7 +430,7 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
             }
             memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
-            return ERR_READ_FILE;
+            return ERR_FILE_CORRUPTION;
         }
 
         if (!isValidCharacter(&currentCharacter)) {
@@ -449,14 +443,12 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
         }
 
         (*ptr)[i] = currentCharacter;
-
-        memset(&currentCharacter, 0, sizeof(struct Character));
     }
 
-    if (numItems == NULL) {
+    if (nmemb == NULL) {
         return ERR_NULL_POINTER;
     }
-    *numItems = num;
+    *nmemb = num;
 
     if (fflush(fp) != 0) { //? When should I call fflush?
         return ERR_FFLUSH;
@@ -484,11 +476,6 @@ int loadCharacters(struct Character **ptr, size_t *numItems, int fd) {
 // https://cits3007.github.io/labs/lab04-solutions.html
 // https://cits3007.github.io/labs/lab07-solutions.html
 int secureLoad(const char *filepath) {
-    // TODO: validate if the input is a decent filepath
-    if (filepath == NULL) {
-        return 0;
-    }
-
     uid_t originalEuid = geteuid();
 
     // TODO: Sanitise envrionment variables: How to sanitise the environment variables properly before spawning a child process? What environment variables should be retained?
@@ -496,12 +483,8 @@ int secureLoad(const char *filepath) {
         return ERR_CLEAR_ENV;
     }
 
-    // if (setenv("PATH", "/usr/bin:/bin", 1) != 0) {
-    //     return ERR_CLEAR_ENV;
-    // }
-
-    struct ItemDetails **ptr; //? How should we initialise that?
-    size_t numItems;
+    struct ItemDetails *ptr;
+    size_t numItems = 0;
 
     // spawning a child process
     pid_t pid = fork();
@@ -526,6 +509,7 @@ int secureLoad(const char *filepath) {
         }
 
         // drop privileges
+        //? seteuid(originalEuid) or seteuid(getuid())
         if (setuid(getuid()) != 0) {
             if (close(fd) != 0) {
                 return ERR_CLOSE_FD;
@@ -554,7 +538,7 @@ int secureLoad(const char *filepath) {
             return ERR_FD_EXECUTE_PERMISSION;
         }
 
-        if (loadItemDetails(ptr, &numItems, fd) != 0) {
+        if (loadItemDetails(&ptr, &numItems, fd) != 0) {
             if (close(fd) != 0) {
                 return ERR_CLOSE_FD;
             }
@@ -568,7 +552,7 @@ int secureLoad(const char *filepath) {
         // parent process (unprivileged)
         // wait for child process
         wait(NULL);
-        // playGame(*ptr, numItems);
+        playGame(ptr, numItems);
     }
 
     return 0;
@@ -581,5 +565,10 @@ For testing purposes only, you'll therefore probably want to define a playGame()
 
 But you should not include a definition of playGame() in your submitted code (since if you do, the tests we run on your submitted code won't compile and link correctly)"
 */
-//! delete the playGame() definition, but not the declaration
-void playGame(struct ItemDetails *ptr, size_t numItems);
+
+void playGame(struct ItemDetails *ptr, size_t nmemb);
+
+//! delete the playGame() definition, but not the declaration before submitting this .c file
+void playGame(struct ItemDetails *ptr, size_t nmemb) {
+    // TODO: check if the privileges are dropped
+}
