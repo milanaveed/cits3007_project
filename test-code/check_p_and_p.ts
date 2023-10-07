@@ -136,14 +136,14 @@ int open_with_fileno(const char * infile_path) {
 ////loadCharacter()
 ////////////////////////////////////////////////////////////
 
-#tcase loadCharacter_testcase
-   struct ItemDetails items001_expectedCharacters[] = {
-     { .characterID = 16602759796824690ULL, .socialClass = 0,      .profession = "brassjiowueiorn", .name="uiroew reiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
-     { .characterID = 1660275979690ULL, .socialClass = 2,      .profession = "brassjiowuiyuiiorn", .name="uir oew reiwo", .inventorySize=2, .inventory={{ .itemID=8972845ULL, .quantity= 2}, {.itemID=972845ULL, .quantity= 1}} },
-     { .characterID = 16602759796824690ULL, .socialClass = 4,      .profession = "brjiowueiorn", .name="uiroew eiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
-   };
+// #tcase loadCharacter_testcase
+//    struct ItemDetails items001_expectedCharacters[] = {
+//      { .characterID = 16602759796824690ULL, .socialClass = 0,      .profession = "brassjiowueiorn", .name="uiroew reiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
+//      { .characterID = 1660275979690ULL, .socialClass = 2,      .profession = "brassjiowuiyuiiorn", .name="uir oew reiwo", .inventorySize=2, .inventory={{ .itemID=8972845ULL, .quantity= 2}, {.itemID=972845ULL, .quantity= 1}} },
+//      { .characterID = 16602759796824690ULL, .socialClass = 4,      .profession = "brjiowueiorn", .name="uiroew eiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
+//    };
 
-    size_t items001_expectedSize = sizeof(items001_expectedCharacters)/sizeof(struct Character);
+//     size_t items001_expectedSize = sizeof(items001_expectedCharacters)/sizeof(struct Character);
 
  //todo: 以下未修改   
 
@@ -219,7 +219,7 @@ int open_with_fileno(const char * infile_path) {
 //    char* file_conts = NULL;
 //    size_t file_size = 0;
 
-//    FILE *ofp = fopen("tmp.dat", "wb");
+//    FILE *ofp = fopen("itemDetails.dat", "wb");
 //    assert(ofp != NULL);
 //    int fd = fileno(ofp);
 //    assert(fd != -1);
@@ -259,8 +259,7 @@ int open_with_fileno(const char * infile_path) {
 #tcase saveCharacters_testcase
 
 #test saveCharacters_works
-/**
- * struct Character arr[] = { {
+struct Character chaArr[] = { {
   .characterID = 1,
   .socialClass = MERCHANT,
   .profession = "inn-keeper",
@@ -272,9 +271,42 @@ int open_with_fileno(const char * infile_path) {
     }
   }
 } };
-const int expected_result = 1;
-int actual_result = saveCharacters(arr, 1, 99);
-ck_assert_int_eq(actual_result, expected_result);
- */
+
+size_t chaArr_size = sizeof(chaArr)/sizeof(struct Character);
+
+char* file_conts = NULL;
+size_t file_size = 0;
+
+FILE *ofp = fopen("characters.dat", "wb");
+assert(ofp!=NULL);
+
+int fd = fileno(ofp);
+assert(fd!=-1);
+int res = saveCharacters(chaArr, chaArr_size, fd);
+assert(res==0);
+fclose(ofp);
+
+res = slurp_file("characters.dat", "rb", &file_conts, &file_size);
+assert(res==0);
+
+const size_t expected_size = sizeof(uint64_t) + sizeof(struct Character);
+
+fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
+
+ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+
+// metadata should be `1`
+size_t actual_read_metadata = 0;
+memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
+
+// following the metadata should be our struct
+struct Character actual_read_item = { 0 };
+memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct Character));
+
+assert_characters_are_equal(&actual_read_item, &(chaArr[0]));
+
+if (file_conts != NULL)
+    free(file_conts);
 
 // vim: syntax=c :

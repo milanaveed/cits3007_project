@@ -63,6 +63,17 @@ void* random_contents(size_t size) {
   return conts;
 }
 
+void assert_characters_are_equal(const struct Character *c1, const struct Character *c2){
+    ck_assert_msg(c1->characterID == c2->characterID, "characterID for c1 and c2 should be equal");
+    ck_assert_msg(c1->socialClass == c2->socialClass, "socialClass for c1 and c2 should be equal");
+    ck_assert_str_eq(c1->profession, c2->profession);
+    ck_assert_str_eq(c1->name, c2->name);
+    ck_assert_msg(c1->inventorySize == c2->inventorySize, "inventorySize for c1 and c2 should be equal");
+    ck_assert_msg(c1->inventory->itemID == c2->inventory->itemID, "inventory itemID for c1 and c2 should be equal");
+    ck_assert_msg(c1->inventory->quantity == c2->inventory->quantity, "inventory quantity for c1 and c2 should be equal");
+}
+
+
 int mock_file(const char * name, const void *conts, size_t size) {
 #ifdef DEBUG
   fprintf(stderr, __FILE__

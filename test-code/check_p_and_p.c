@@ -10,6 +10,12 @@
 // DO NOT SUBMIT THIS FILE
 //////////////////////////
 
+// Command for make test:
+//$ make test
+// Command for more readable test result:
+//$ make all && CK_TAP_LOG_FILE_NAME=- prove --verbose ./check_p_and_p
+
+
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
@@ -43,7 +49,8 @@ int open_with_fileno(const char * infile_path) {
 
 
 
-#line 40
+#line 45
+// #tcase arithmetic_testcase
 // ^ this isn't a "real" test-case -- it's just used as an illustration
 // of how test-cases are written.
 
@@ -137,7 +144,7 @@ int open_with_fileno(const char * infile_path) {
 ////loadCharacter()
 ////////////////////////////////////////////////////////////
 
-//#tcase loadCharacter_testcase
+// #tcase loadCharacter_testcase
 //    struct ItemDetails items001_expectedCharacters[] = {
 //      { .characterID = 16602759796824690ULL, .socialClass = 0,      .profession = "brassjiowueiorn", .name="uiroew reiwo", .inventorySize=1, .inventory={ .itemID=8972845ULL, .quantity= 2} },
 //      { .characterID = 1660275979690ULL, .socialClass = 2,      .profession = "brassjiowuiyuiiorn", .name="uir oew reiwo", .inventorySize=2, .inventory={{ .itemID=8972845ULL, .quantity= 2}, {.itemID=972845ULL, .quantity= 1}} },
@@ -208,52 +215,108 @@ int open_with_fileno(const char * infile_path) {
 //// implementation to test:
 /////////////////////////////////////////////////////////
 //
+//#tcase saveItemDetails_testcase
+//
+// #test saveItemDetails_works
 
-START_TEST(saveItemDetails_works)
+//    struct ItemDetails itemArr[] = {
+//      { .itemID = 16602759796824695000UL, .name = "telescope",      .desc = "brass with wooden tripod, 25x30x60 in." }
+//    };
+//    size_t itemArr_size = sizeof(itemArr)/sizeof(struct ItemDetails);
+
+//    char* file_conts = NULL;
+//    size_t file_size = 0;
+
+//    FILE *ofp = fopen("itemDetails.dat", "wb");
+//    assert(ofp != NULL);
+//    int fd = fileno(ofp);
+//    assert(fd != -1);
+//    int res = saveItemDetails(itemArr, itemArr_size, fd);
+//    assert(res == 0);
+//    fclose(ofp);
+
+//    res = slurp_file("tmp.dat", "rb", &file_conts, &file_size);
+//    assert(res == 0);
+
+//    const size_t expected_size = sizeof(uint64_t) + sizeof(struct ItemDetails);
+
+//    fprintf(stderr, "%s:%d: actual file_size = %zu\n",
+//            __FILE__, __LINE__, file_size);
+
+//    ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+
+//    // metadata should be `1`
+//    size_t actual_read_metadata = 0;
+//    memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+//    ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+
+//    // following the metadata should be our struct
+//    struct ItemDetails actual_read_item = { 0 };
+//    memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct ItemDetails));
+//    ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+
+//    assert_itemDetails_are_equal(&actual_read_item, &(itemArr[0]));
+
+//    if (file_conts != NULL)
+//      free(file_conts);
+
+
+////////////////////////////////////////////////////////////
+//// saveCharacters()
+////////////////////////////////////////////////////////////
+
+START_TEST(saveCharacters_works)
 {
-#line 207
+#line 262
+struct Character chaArr[] = { {
+  .characterID = 1,
+  .socialClass = MERCHANT,
+  .profession = "inn-keeper",
+  .name = "Edgar Crawford",
+  .inventorySize = 1,
+  .inventory = {
+    { .itemID = 200648657395984580,
+      .quantity = 1
+    }
+  }
+} };
 
-   struct ItemDetails itemArr[] = {
-     { .itemID = 16602759796824695000UL, .name = "telescope",      .desc = "brass with wooden tripod, 25x30x60 in." }
-   };
-   size_t itemArr_size = sizeof(itemArr)/sizeof(struct ItemDetails);
+size_t chaArr_size = sizeof(chaArr)/sizeof(struct Character);
 
-   char* file_conts = NULL;
-   size_t file_size = 0;
+char* file_conts = NULL;
+size_t file_size = 0;
 
-   FILE *ofp = fopen("tmp.dat", "wb");
-   assert(ofp != NULL);
-   int fd = fileno(ofp);
-   assert(fd != -1);
-   int res = saveItemDetails(itemArr, itemArr_size, fd);
-   assert(res == 0);
-   fclose(ofp);
+FILE *ofp = fopen("characters.dat", "wb");
+assert(ofp!=NULL);
 
-   res = slurp_file("tmp.dat", "rb", &file_conts, &file_size);
-   assert(res == 0);
+int fd = fileno(ofp);
+assert(fd!=-1);
+int res = saveCharacters(chaArr, chaArr_size, fd);
+assert(res==0);
+fclose(ofp);
 
-   const size_t expected_size = sizeof(uint64_t) + sizeof(struct ItemDetails);
+res = slurp_file("characters.dat", "rb", &file_conts, &file_size);
+assert(res==0);
 
-   fprintf(stderr, "%s:%d: actual file_size = %zu\n",
-           __FILE__, __LINE__, file_size);
+const size_t expected_size = sizeof(uint64_t) + sizeof(struct Character);
 
-   ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
 
-   // metadata should be `1`
-   size_t actual_read_metadata = 0;
-   memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-   ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
 
-   // following the metadata should be our struct
-   struct ItemDetails actual_read_item = { 0 };
-   memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct ItemDetails));
-   ck_assert_msg(actual_read_metadata == itemArr_size, "size of written metadata should be as expected");
+// metadata should be `1`
+size_t actual_read_metadata = 0;
+memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
 
-   assert_itemDetails_are_equal(&actual_read_item, &(itemArr[0]));
+// following the metadata should be our struct
+struct Character actual_read_item = { 0 };
+memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct Character));
 
-   if (file_conts != NULL)
-     free(file_conts);
+assert_characters_are_equal(&actual_read_item, &(chaArr[0]));
 
+if (file_conts != NULL)
+    free(file_conts);
 
 // vim: syntax=c :
 }
@@ -262,12 +325,12 @@ END_TEST
 int main(void)
 {
     Suite *s1 = suite_create("p_and_p_tests");
-    TCase *tc1_1 = tcase_create("saveItemDetails_testcase");
+    TCase *tc1_1 = tcase_create("saveCharacters_testcase");
     SRunner *sr = srunner_create(s1);
     int nf;
 
     suite_add_tcase(s1, tc1_1);
-    tcase_add_test(tc1_1, saveItemDetails_works);
+    tcase_add_test(tc1_1, saveCharacters_works);
 
     srunner_run_all(sr, CK_ENV);
     nf = srunner_ntests_failed(sr);
