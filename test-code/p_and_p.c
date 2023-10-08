@@ -15,6 +15,7 @@
 #define ERR_OPEN_FILE 1
 #define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_FILE_CORRUPTION 1
+#define ERR_SIZE_0 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
 #define ERR_NULL_POINTER 1
@@ -43,12 +44,10 @@
 // TODO: write secureLoad()
 // TODO: write a check test for loadCharacters()
 // TODO: enable all sanitizer flags
-// TODO: try fuzzing
 // TODO: sanitise things in and out
 // todo: be careful with memory leak
 // TODO: Don't close the file pointer
 // TODO: use fflush() instead of fclose(), check the help forum
-// TODO: use calloc instead of malloc
 
 /**
  * @brief  Serializes an array of ItemDetails structs.
@@ -98,7 +97,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
         }
     }
 
-    if (fflush(fp) != 0) { //* enough and no need to close the fp
+    if (fflush(fp) != 0) {
         return ERR_FFLUSH;
     }
 
@@ -154,7 +153,11 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    *ptr = (struct ItemDetails *)malloc(num * sizeof(struct ItemDetails));
+    if(num == 0){ // Ensure that 0 is never passed as a size argument to calloc(). Related to CWE-687
+        return ERR_SIZE_0; 
+    }
+
+    *ptr = (struct ItemDetails *) calloc(num, sizeof(struct ItemDetails));
     if (*ptr == NULL) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
@@ -171,7 +174,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
             if (fclose(fp) != 0) {
                 return ERR_CLOSE_FILE;
             }
-            memset(*ptr, 0, num * sizeof(struct ItemDetails));
+            memset(*ptr, 0, num * sizeof(struct ItemDetails)); // Sanitize memory to prevent information leakage
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
             return ERR_FILE_CORRUPTION;
@@ -190,7 +193,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
         (*ptr)[i] = currentItem;
     }
 
-    if (nmemb == NULL) {
+    if (nmemb == NULL) { // Avoid deferencing NULL pointer
         return ERR_NULL_POINTER;
     }
     *nmemb = num;
@@ -403,7 +406,11 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    *ptr = (struct Character *)malloc(num * sizeof(struct Character));
+    if (num == 0) { // Ensure that 0 is never passed as a size argument to calloc(). Related to CWE-687
+        return ERR_SIZE_0;
+    }
+
+    *ptr = (struct Character *) calloc(num, sizeof(struct Character));
     if (*ptr == NULL) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
@@ -422,6 +429,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             }
             memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
+            *ptr = NULL; // Avoid dangling pointer
             return ERR_FILE_CORRUPTION;
         }
 
@@ -431,13 +439,14 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             }
             memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
+            *ptr = NULL; 
             return ERR_INVALID_TYPE;
         }
 
         (*ptr)[i] = currentCharacter;
     }
 
-    if (nmemb == NULL) {
+    if (nmemb == NULL) { // Avoid deferencing NULL pointer
         return ERR_NULL_POINTER;
     }
     *nmemb = num;
@@ -454,12 +463,11 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 }
 
 /**
- * @brief  Acquires appropriate permissions, loads the ItemDetails database, and then permanently drops permissions.
- * @note   It should attempt to acquire appropriate permissions for opening the ItemDetails database (that is: the effective userID should be set to the userID of pitchpoltadmin), should load the database from the specified file, and then (after permanently dropping privileges), call the function `playGame()` to which it should pass the loaded data.
+ * @brief  Acquires appropriate permissions to load the ItemDetails database securely.
+ * 
  * @param  *filepath:
  * @retval Returns 1 if an error occurs during the deserialization process. It should check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin. If that is not the case, or if an error occurs in acquiring or dropping permissions, the function should return 2. In all other cases, it should return 0.
  */
-//*check labs and forum (the setuid lab)
 // "We could start it as one process, and then one of them splits off, and it's the privileged bit, and the other one splits off, and it's the unprivileged bit"
 //"In the project for CITS3007, it will be up to you to ensure you follow good secure coding practices – dropping privileges when appropriate, calling fstat() instead of stat(), and checking the return values of functions that can fail – and following these practices will comprise a significant proportion of your mark."
 //"Traditionally on Unix-like systems, running processes can be divided into two categories:
