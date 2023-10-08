@@ -31,11 +31,8 @@
 #define ERR_FORKING 0
 #define ERR_CLOSE_FD 0
 
-// TODO: Finish first, then improve
-//* pay attention to type specifier: size_t or uint64_t
 //* compile with gcc -I to look for header files
 //* write a fairly brief documentation block: when documenting, we can assume the reader is familiar with the file format and the struct types
-//* [FILE* and file descriptor read/write performance](https://stackoverflow.com/questions/17524512/file-and-file-descriptor-read-write-performance/17524609#17524609)
 //* will get low mark if too many comments. Comments should be used to explain what is not in the code
 //* only submit this .c file
 //* Inline comments should not say what the code is doing – anyone who understands the programming language should be able to see that – but rather why it is doing it.
@@ -49,12 +46,9 @@
 // TODO: try fuzzing
 // TODO: sanitise things in and out
 // todo: be careful with memory leak
-//? When should we zero things out? By using memset?
-
 // TODO: Don't close the file pointer
 // TODO: use fflush() instead of fclose(), check the help forum
 // TODO: use calloc instead of malloc
-// TODO: don't use memset?
 
 /**
  * @brief  Serializes an array of ItemDetails structs.
@@ -179,6 +173,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
             }
             memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
+            *ptr = NULL; // Avoid dangling pointer
             return ERR_FILE_CORRUPTION;
         }
 
@@ -188,6 +183,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
             }
             memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
+            *ptr = NULL;
             return ERR_INVALID_TYPE;
         }
 
@@ -407,10 +403,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    if (ptr == NULL) {
-        return ERR_NULL_POINTER;
-    }
-
     *ptr = (struct Character *)malloc(num * sizeof(struct Character));
     if (*ptr == NULL) {
         if (fclose(fp) != 0) {
@@ -420,7 +412,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
 
     for (size_t i = 0; i < num; ++i) {
-        struct Character currentCharacter;
+        struct Character currentCharacter = {0};
 
         size_t elsRead = fread(&currentCharacter, sizeof(struct Character), 1, fp);
 
@@ -450,7 +442,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
     *nmemb = num;
 
-    if (fflush(fp) != 0) { //? When should I call fflush?
+    if (fflush(fp) != 0) { 
         return ERR_FFLUSH;
     }
 
@@ -478,12 +470,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 int secureLoad(const char *filepath) {
     uid_t originalEuid = geteuid();
 
-    // TODO: Sanitise envrionment variables: How to sanitise the environment variables properly before spawning a child process? What environment variables should be retained?
-    if (clearenv() != 0) {
-        return ERR_CLEAR_ENV;
-    }
-
-    struct ItemDetails *ptr;
+    struct ItemDetails *ptr = NULL;
     size_t numItems = 0;
 
     // spawning a child process
