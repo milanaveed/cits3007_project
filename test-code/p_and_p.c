@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <p_and_p.h>
 
 #include <ctype.h>
@@ -16,6 +17,7 @@
 #define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_FILE_CORRUPTION 1
 #define ERR_SIZE_0 1
+#define ERR_WRAPPING 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
 #define ERR_NULL_POINTER 1
@@ -42,12 +44,10 @@
 // If we read something from disc, we assume that it's in a nice sanitised format and everything has been zeroed out. We want to be careful when we read stuff in. We validate it's in the format we expect.
 // Put in some static asserts and say, i'm about to assume that a size_t is 64 bits.
 // TODO: write secureLoad()
-// TODO: write a check test for loadCharacters()
+// TODO: "Although the inventory field of each Character struct always contains MAX_ITEMS elements, only the used portion of the inventory (that is, inventorySize many elements) is written to (or read from) a character file." : improve load and save Characters functions
 // TODO: enable all sanitizer flags
-// TODO: sanitise things in and out
 // todo: be careful with memory leak
-// TODO: Don't close the file pointer
-// TODO: use fflush() instead of fclose(), check the help forum
+// TODO: use fflush() instead of fclose(), don't close the file pointer check the help forum
 
 /**
  * @brief  Serializes an array of ItemDetails structs.
@@ -153,11 +153,15 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    if(num == 0){ // Ensure that 0 is never passed as a size argument to calloc(). Related to CWE-687
-        return ERR_SIZE_0; 
+    if (num == 0) { // Ensure that 0 is never passed as a size argument to calloc(). Related to CWE-687
+        return ERR_SIZE_0;
     }
 
-    *ptr = (struct ItemDetails *) calloc(num, sizeof(struct ItemDetails));
+    if (num > SIZE_MAX / sizeof(struct ItemDetails)) { // Prevent wrapping when calculating the size in calloc(). Related to CWE-190, CWE-128
+        return ERR_WRAPPING;
+    }
+
+    *ptr = (struct ItemDetails *)calloc(num, sizeof(struct ItemDetails));
     if (*ptr == NULL) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
@@ -218,16 +222,15 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
 
 So, after this line of code, `currentItem` is a pointer to the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.*/
 
-//* done, checked, passed moodle, not improved
 /**
- * @brief  Checks whether a string constitutes a valid name field, which requires the characters contained to have a graphical representation (as defined by the C function isgraph). No other characters are permitted. This means that names cannot contain (for instance) whitespace or control characters.
- * @note   A name field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
- * @param  *str: A string (a pointer to a character).
+ * @brief  Checks whether a string constitutes a valid name field.
+ * @note
+ * @param  *str: String to be validated.
  * @retval Returns 1 if it is a valid name field, and 0 if not.
  */
 int isValidName(const char *str) {
-    size_t length = strlen(str);
-    if (length >= DEFAULT_BUFFER_SIZE) {
+    size_t length = strnlen(str, DEFAULT_BUFFER_SIZE);
+    if (length == DEFAULT_BUFFER_SIZE) {
         return 0;
     }
 
@@ -240,16 +243,15 @@ int isValidName(const char *str) {
     return 1;
 }
 
-//* done, checked, passed moodle, not improved
 /**
- * @brief  Checks whether a string constitutes a valid multi-word field, which may contain all the characters in a name field, and may also contain space characters (but the first and the last characters must not be spaces).
- * @note   A multi-word field is always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
- * @param  *str: A string (a pointer to a character).
+ * @brief  Checks whether a string constitutes a valid multi-word field.
+ * @note
+ * @param  *str: String to be validated.
  * @retval Returns 1 if it is a valid multi-word field, and 0 if not.
  */
 int isValidMultiword(const char *str) {
-    size_t length = strlen(str);
-    if (length >= DEFAULT_BUFFER_SIZE) {
+    size_t length = strnlen(str, DEFAULT_BUFFER_SIZE);
+    if (length == DEFAULT_BUFFER_SIZE) {
         return 0;
     }
 
@@ -410,7 +412,11 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         return ERR_SIZE_0;
     }
 
-    *ptr = (struct Character *) calloc(num, sizeof(struct Character));
+    if (num > SIZE_MAX / sizeof(struct Character)) { // Prevent wrapping when calculating the size in calloc(). Related to CWE-190, CWE-128
+        return ERR_WRAPPING;
+    }
+
+    *ptr = (struct Character *)calloc(num, sizeof(struct Character));
     if (*ptr == NULL) {
         if (fclose(fp) != 0) {
             return ERR_CLOSE_FILE;
@@ -439,7 +445,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             }
             memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
             free(*ptr);
-            *ptr = NULL; 
+            *ptr = NULL;
             return ERR_INVALID_TYPE;
         }
 
@@ -451,7 +457,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
     *nmemb = num;
 
-    if (fflush(fp) != 0) { 
+    if (fflush(fp) != 0) {
         return ERR_FFLUSH;
     }
 
@@ -464,7 +470,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 
 /**
  * @brief  Acquires appropriate permissions to load the ItemDetails database securely.
- * 
+ *
  * @param  *filepath:
  * @retval Returns 1 if an error occurs during the deserialization process. It should check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin. If that is not the case, or if an error occurs in acquiring or dropping permissions, the function should return 2. In all other cases, it should return 0.
  */
@@ -476,7 +482,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 // https://cits3007.github.io/labs/lab04-solutions.html
 // https://cits3007.github.io/labs/lab07-solutions.html
 int secureLoad(const char *filepath) {
-    uid_t originalEuid = geteuid();
+    const uid_t originalEuid = geteuid();
 
     struct ItemDetails *ptr = NULL;
     size_t numItems = 0;
