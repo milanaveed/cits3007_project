@@ -118,6 +118,23 @@ assert_itemDetails_are_equal(chaArr + _i, &(items001_expectedCharacters[_i]));
 free(chaArr);
 
 ///////////////////////////////////////////////////////////
+struct Character chaArr[] = {{.characterID = 1,
+                              .socialClass = MERCHANT,
+                              .profession = "inn-keeper",
+                              .name = "Edgar Crawford",
+                              .inventorySize = 2,
+                              .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
+                             {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
+                             {.characterID = 1, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 1}}},
+                             {.characterID = 1, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 1}}}};
+size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
+
+
+
+size_t expected_struct_data_size = count_struct_data_size(chaArr, chaArr_size);
+
+// const size_t expected_size = sizeof(uint64_t) + sizeof(chaArr);
+
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 // int main() {

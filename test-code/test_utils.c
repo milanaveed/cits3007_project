@@ -74,6 +74,15 @@ void assert_characters_are_equal(const struct Character *c1, const struct Charac
 }
 
 
+size_t count_struct_data_size(const struct Character* charArr, size_t charArr_size){
+    size_t count = 0;
+    size_t regular = (sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + sizeof(DEFAULT_BUFFER_SIZE) * 2 + sizeof(size_t))*charArr_size;
+    for (int i = 0; i < charArr_size; ++i) {
+        
+    }
+}
+
+
 int mock_file(const char * name, const void *conts, size_t size) {
 #ifdef DEBUG
   fprintf(stderr, __FILE__

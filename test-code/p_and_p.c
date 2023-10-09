@@ -17,6 +17,7 @@
 #define ERR_INSUFFICIENT_MEMORY 1
 #define ERR_FILE_CORRUPTION 1
 #define ERR_SIZE_0 1
+#define ERR_INVALID_SIZE 1
 #define ERR_WRAPPING 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
@@ -98,26 +99,26 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     return SUCCESS;
 }
 
-/**
- * @brief  Save ItemDetails database to disk.
- * @note
- * @param  arr:
- * @param  nmemb:
- * @param  filename:
- * @retval
- */
-int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
-    int fd = open(filename, O_WRONLY);
-    if (fd == -1) {
-        return ERR_OPEN_FILE;
-    }
+// /**
+//  * @brief  Save ItemDetails database to disk.
+//  * @note
+//  * @param  arr:
+//  * @param  nmemb:
+//  * @param  filename:
+//  * @retval
+//  */
+// int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
+//     int fd = open(filename, O_WRONLY);
+//     if (fd == -1) {
+//         return ERR_OPEN_FILE;
+//     }
 
-    if (saveItemDetails(arr, nmemb, fd) == 1) {
-        return 1;
-    }
+//     if (saveItemDetails(arr, nmemb, fd) == 1) {
+//         return 1;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 /**
  * @brief  Deserializes a file, including allocating enough memory to store the number of records contained in the file, and write the address of that memory to ptr. The memory is to be freed by the caller. Write all records contained in the file into the allocated memory. Write the number of records to nmemb.
@@ -326,6 +327,14 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
         return ERR_INVALID_FD;
     }
 
+    if (nmemb <= 0) {
+        return ERR_INVALID_SIZE;
+    }
+
+    if (arr == NULL) {
+        return ERR_NULL_POINTER;
+    }
+
     FILE *fp = fdopen(fd, "wb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
@@ -338,21 +347,21 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    if (arr == NULL) {
-        return ERR_NULL_POINTER;
-    }
-
     for (size_t i = 0; i < nmemb; i++) {
-        struct Character currentCharacter = arr[i];
+        const struct Character *currentCharacter = &arr[i];
 
-        if (!isValidCharacter(&currentCharacter)) {
+        if (!isValidCharacter(currentCharacter)) {
             if (fclose(fp) != 0) {
                 return ERR_CLOSE_FILE;
             }
             return ERR_INVALID_TYPE;
         }
 
-        size_t elsWritten = fwrite(&currentCharacter, sizeof(struct Character), 1, fp);
+        const size_t bytesToWrite = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + sizeof(DEFAULT_BUFFER_SIZE) * 2 + sizeof(size_t) + sizeof(struct ItemCarried) * currentCharacter->inventorySize;
+
+        size_t elsWritten = fwrite(currentCharacter, bytesToWrite, 1, fp);
+
+        // TODO: how to write the rest of the inventory elements?
 
         if (elsWritten != 1) {
             if (fclose(fp) != 0) {
@@ -418,8 +427,8 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     for (size_t i = 0; i < num; ++i) {
         struct Character *currentCharacter = &(*ptr)[i];
 
-        if (fread(&currentCharacter, sizeof(struct Character), 1, fp) != 1) {
-            memset(*ptr, 0, sizeof(num * sizeof(struct Character))); // Sanitize memory to prevent information leakage
+        // Only read inventorySize many elements
+        if (fread(&(currentCharacter->characterID), sizeof(uint64_t), 1, fp) != 1 || fread(&(currentCharacter->socialClass), sizeof(enum CharacterSocialClass), 1, fp) != 1 || fread(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(&(currentCharacter->inventorySize), sizeof(size_t), 1, fp) != 1 || fread(currentCharacter->inventory, sizeof(struct ItemCarried), currentCharacter->inventorySize, fp) != 1) {
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
             if (fclose(fp) != 0) {
@@ -428,8 +437,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             return ERR_FILE_CORRUPTION;
         }
 
-        if (!isValidCharacter(&currentCharacter)) {
-            memset(*ptr, 0, sizeof(num * sizeof(struct Character)));
+        if (!isValidCharacter(currentCharacter)) {
             free(*ptr);
             *ptr = NULL;
             if (fclose(fp) != 0) {
@@ -437,8 +445,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             }
             return ERR_INVALID_TYPE;
         }
-
-        (*ptr)[i] = currentCharacter;
     }
 
     //?
@@ -485,7 +491,12 @@ int secureLoad(const char *filepath) {
             return ERR_ACQUIRE_PERMISSION;
         }
     }
-
+    /*
+    p_and_p.c|493 col 14 warning| [flawfinder] (misc) open: Check when opening files|~
+         - can an attacker redirect it (via symlinks), force the opening of special file|~
+         type (e.g., device files), move things around to create a race condition, contr|~
+        ol its ancestors, or change its contents? (CWE-362).   [Warning]
+    */
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
         return ERR_OPEN_FILE;
@@ -552,10 +563,15 @@ void playGame(struct ItemDetails *ptr, size_t nmemb);
 
 //! delete the playGame() definition, but not the declaration before submitting this .c file
 void playGame(struct ItemDetails *ptr, size_t nmemb) {
-    size_t num = nmemb;
     struct ItemDetails item = ptr[0];
     uint64_t id = item.itemID;
     printf("id is: %ld\n", id);
+    printf("id is: %ld\n", nmemb);
     printf("euid is: %d\n", geteuid());
     printf("uid is: %d\n", getuid());
 }
+
+// int main(){
+
+//     return 0;
+// }
