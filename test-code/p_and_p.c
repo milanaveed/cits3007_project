@@ -129,7 +129,7 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const cha
  */
 int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     //?! Are ptr and nmemb NULL pointers?
-    //? If not, should we
+    //? If not, should we reallocate the memory?
     if (fd < 0) {
         return ERR_INVALID_FD;
     }
@@ -372,6 +372,7 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
     return SUCCESS;
 }
 
+//* "Although the inventory field of each Character struct always contains MAX_ITEMS elements, only the used portion of the inventory (that is, inventorySize many elements) is written to (or read from) a character file."
 /**
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
@@ -415,11 +416,9 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
 
     for (size_t i = 0; i < num; ++i) {
-        struct Character currentCharacter = {0};
+        struct Character *currentCharacter = &(*ptr)[i];
 
-        size_t elsRead = fread(&currentCharacter, sizeof(struct Character), 1, fp);
-
-        if (elsRead != 1) {
+        if (fread(&currentCharacter, sizeof(struct Character), 1, fp) != 1) {
             memset(*ptr, 0, sizeof(num * sizeof(struct Character))); // Sanitize memory to prevent information leakage
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
