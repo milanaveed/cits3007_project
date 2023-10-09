@@ -487,74 +487,65 @@ int secureLoad(const char *filepath) {
     struct ItemDetails *ptr = NULL;
     size_t numItems = 0;
 
-    // spawning a child process
-    pid_t pid = fork();
-    if (pid < 0) {
-        return ERR_FORKING;
-    } else if (pid == 0) { // child process (privileged)
-        struct passwd *userInfo = getpwnam("pitchpoltadmin");
-        if (userInfo == NULL) {
-            return ERR_NO_USER_INFO;
-        }
+    struct passwd *userInfo = getpwnam("pitchpoltadmin");
+    if (userInfo == NULL) {
+        return ERR_NO_USER_INFO;
+    }
 
-        // check permissions, acquire permissions to open the database
-        if (originalEuid != userInfo->pw_uid) {
-            if (seteuid(userInfo->pw_uid) != 0) {
-                return ERR_ACQUIRE_PERMISSION;
-            }
+    // check permissions, acquire permissions to open the database
+    if (originalEuid != userInfo->pw_uid) {
+        if (seteuid(userInfo->pw_uid) != 0) {
+            return ERR_ACQUIRE_PERMISSION;
         }
+    }
 
-        int fd = open(filepath, O_RDONLY);
-        if (fd == -1) {
-            return ERR_OPEN_FILE;
-        }
+    int fd = open(filepath, O_RDONLY);
+    if (fd == -1) {
+        return ERR_OPEN_FILE;
+    }
 
-        // drop privileges
-        //? seteuid(originalEuid) or seteuid(getuid())
-        if (setuid(getuid()) != 0) {
-            if (close(fd) != 0) {
-                return ERR_CLOSE_FD;
-            }
-            return ERR_DROP_PERMISSION;
-        }
-
-        // check the fd UID and mode by fstat(), check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin.
-        struct stat fileStat;
-        if (fstat(fd, &fileStat) != 0) {
-            if (close(fd) != 0) {
-                return ERR_CLOSE_FD;
-            }
-            return ERR_RETRIEVE_FD_INFO;
-        }
-        if (fileStat.st_uid != userInfo->pw_uid) {
-            if (close(fd) != 0) {
-                return ERR_CLOSE_FD;
-            }
-            return ERR_FD_USERID;
-        }
-        if (!(fileStat.st_mode & S_IXUSR)) {
-            if (close(fd) != 0) {
-                return ERR_CLOSE_FD;
-            }
-            return ERR_FD_EXECUTE_PERMISSION;
-        }
-
-        if (loadItemDetails(&ptr, &numItems, fd) != 0) {
-            if (close(fd) != 0) {
-                return ERR_CLOSE_FD;
-            }
-            return ERR_DESERIALIZATION;
-        }
-
+    // drop privileges
+    //? seteuid(originalEuid) or seteuid(getuid())
+    if (setuid(getuid()) != 0) {
         if (close(fd) != 0) {
             return ERR_CLOSE_FD;
         }
-    } else {
-        // parent process (unprivileged)
-        // wait for child process
-        wait(NULL);
-        playGame(ptr, numItems);
+        return ERR_DROP_PERMISSION;
     }
+
+    // check the fd UID and mode by fstat(), check the running process’s permissions to ensure that the executable it was launched from was indeed a setUID executable owned by user pitchpoltadmin.
+    struct stat fileStat;
+    if (fstat(fd, &fileStat) != 0) {
+        if (close(fd) != 0) {
+            return ERR_CLOSE_FD;
+        }
+        return ERR_RETRIEVE_FD_INFO;
+    }
+    if (fileStat.st_uid != userInfo->pw_uid) {
+        if (close(fd) != 0) {
+            return ERR_CLOSE_FD;
+        }
+        return ERR_FD_USERID;
+    }
+    if (!(fileStat.st_mode & S_IXUSR)) {
+        if (close(fd) != 0) {
+            return ERR_CLOSE_FD;
+        }
+        return ERR_FD_EXECUTE_PERMISSION;
+    }
+
+    if (loadItemDetails(&ptr, &numItems, fd) != 0) {
+        if (close(fd) != 0) {
+            return ERR_CLOSE_FD;
+        }
+        return ERR_DESERIALIZATION;
+    }
+
+    if (close(fd) != 0) {
+        return ERR_CLOSE_FD;
+    }
+
+    playGame(ptr, numItems);
 
     return 0;
 }
