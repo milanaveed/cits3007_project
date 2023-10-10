@@ -236,9 +236,9 @@ int open_with_fileno(const char * infile_path) {
 //// Uncomment the following if you have a saveItemDetails()
 //// implementation to test:
 /////////////////////////////////////////////////////////
-//
-//#tcase saveItemDetails_testcase
-//
+// //
+// #tcase saveItemDetails_testcase
+
 // #test saveItemDetails_works
 
 //    struct ItemDetails itemArr[] = {
@@ -503,5 +503,63 @@ int open_with_fileno(const char * infile_path) {
 
 // if (file_conts != NULL)
 //     free(file_conts);
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+#tcase saveCharacters_testcase
+
+#test saveCharacters_works
+struct Character chaArr[] = {{.characterID = 1,
+                              .socialClass = MERCHANT,
+                              .profession = "inn-keeper",
+                              .name = "Edgar Crawford",
+                              .inventorySize = 2,
+                              .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
+                             {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
+                             {.characterID = 1, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 1}}},
+                             {.characterID = 1, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 1}}}};
+
+size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
+
+char *file_conts = NULL;
+size_t file_size = 0;
+
+FILE *ofp = fopen("characters05.dat", "wb");
+assert(ofp != NULL);
+
+int fd = fileno(ofp);
+assert(fd != -1);
+int res = saveCharacters(chaArr, chaArr_size, fd);
+assert(res == 0);
+fclose(ofp);
+
+res = slurp_file("characters05.dat", "rb", &file_conts, &file_size);
+assert(res == 0);
+
+const size_t expected_size = sizeof(uint64_t) + count_struct_data_size(chaArr, chaArr_size);
+
+printf("expected_size = %ld bytes\n", expected_size);
+
+fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
+
+ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+
+// metadata should be `1`
+size_t actual_read_metadata = 0;
+memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
+printf("chaArray size = %ld\n", actual_read_metadata);
+
+// following the metadata should be our struct
+struct Character actual_read_item1 = {0};
+memcpy(&actual_read_item1, file_conts + sizeof(size_t), 1076);
+
+assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
+
+struct Character actual_read_item2 = {0};
+memcpy(&actual_read_item2, file_conts + sizeof(size_t) + 1076, 1060);
+
+if (file_conts != NULL)
+    free(file_conts);
 
 // vim: syntax=c :

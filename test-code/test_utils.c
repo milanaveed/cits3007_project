@@ -74,12 +74,16 @@ void assert_characters_are_equal(const struct Character *c1, const struct Charac
 }
 
 
-size_t count_struct_data_size(const struct Character* charArr, size_t charArr_size){
-    size_t count = 0;
-    size_t regular = (sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + sizeof(DEFAULT_BUFFER_SIZE) * 2 + sizeof(size_t))*charArr_size;
-    for (int i = 0; i < charArr_size; ++i) {
-        
+size_t count_struct_data_size(const struct Character* chaArr, size_t chaArr_size){
+    size_t fixed_fields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
+    printf("fixed fields = %ld bytes\n", fixed_fields);
+    printf("chaArray_size = %ld bytes\n", chaArr_size);
+    size_t count = fixed_fields * chaArr_size;
+    for (size_t i = 0; i < chaArr_size; ++i) {
+        count += sizeof(struct ItemCarried) * chaArr[i].inventorySize;
     }
+    printf("expected_struct_size = %ld bytes\n", count);
+    return count;
 }
 
 

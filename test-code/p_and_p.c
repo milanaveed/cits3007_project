@@ -75,13 +75,13 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     }
 
     for (size_t i = 0; i < nmemb; i++) {
-        struct ItemDetails currentItem = arr[i];
+        const struct ItemDetails *currentItem = &arr[i];
 
-        if (!isValidItemDetails(&currentItem)) {
+        if (!isValidItemDetails(currentItem)) {
             return ERR_INVALID_TYPE;
         }
 
-        size_t elsWritten = fwrite(&currentItem, sizeof(struct ItemDetails), 1, fp);
+        size_t elsWritten = fwrite(currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsWritten != 1) {
             return ERR_FILE_CORRUPTION;
@@ -165,9 +165,9 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     }
 
     for (size_t i = 0; i < num; i++) {
-        struct ItemDetails currentItem;
+        struct ItemDetails *currentItem = &(*ptr)[i];
 
-        size_t elsRead = fread(&currentItem, sizeof(struct ItemDetails), 1, fp);
+        size_t elsRead = fread(currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsRead != 1) {
             memset(*ptr, 0, num * sizeof(struct ItemDetails)); // Sanitize memory to prevent information leakage
@@ -179,7 +179,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
             return ERR_FILE_CORRUPTION;
         }
 
-        if (!isValidItemDetails(&currentItem)) {
+        if (!isValidItemDetails(currentItem)) {
             memset(*ptr, 0, num * sizeof(struct ItemDetails));
             free(*ptr);
             *ptr = NULL;
@@ -188,8 +188,6 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
             }
             return ERR_INVALID_TYPE;
         }
-
-        (*ptr)[i] = currentItem;
     }
 
     //! Do we assume the pointers passed in are NULL pointers?
@@ -347,6 +345,13 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
+    const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
+
+    printf("in saveCharacters(): struct fixed_fields = %ld bytes\n", bytesOfFixedFields);
+    printf("size of struct Character = %ld bytes\n", sizeof(struct Character));
+    printf("struct ItemCarried.itemID = %ld bytes\n", sizeof(uint64_t));
+    printf("struct ItemCarried.quantity = %ld bytes\n", sizeof(size_t));
+
     for (size_t i = 0; i < nmemb; i++) {
         const struct Character *currentCharacter = &arr[i];
 
@@ -357,11 +362,32 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
             return ERR_INVALID_TYPE;
         }
 
-        const size_t bytesToWrite = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + sizeof(DEFAULT_BUFFER_SIZE) * 2 + sizeof(size_t) + sizeof(struct ItemCarried) * currentCharacter->inventorySize;
+        //* writing the whole struct Character, successful
+        // size_t elsWritten = fwrite(currentCharacter, sizeof(struct Character), 1, fp);
+
+        // if (elsWritten != 1) {
+        //     if (fclose(fp) != 0) {
+        //         return ERR_CLOSE_FILE;
+        //     }
+        //     return ERR_FILE_CORRUPTION;
+        // }
+
+        //* trying to write only the used portion
+        //     if (fwrite(&(currentCharacter->characterID), sizeof(u_int64_t), 1, fp) != 1 || fwrite(&(currentCharacter->socialClass), sizeof(enum CharacterSocialClass), 1, fp) != 1 || fwrite(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fwrite(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fwrite(&currentCharacter->inventorySize, sizeof(size_t), 1, fp) != 1 || fwrite(currentCharacter->inventory, sizeof(struct ItemCarried), currentCharacter->inventorySize, fp) != currentCharacter->inventorySize) {
+        //         if (fclose(fp) != 0) {
+        //             return ERR_CLOSE_FILE;
+        //         }
+        //         return ERR_FILE_CORRUPTION;
+        //     }
+
+        const size_t bytesOfUsedInventory = sizeof(struct ItemCarried) * currentCharacter->inventorySize;
+        const size_t bytesToWrite = bytesOfFixedFields + bytesOfUsedInventory;
+
+        printf("writing i= %ld Character\n", i);
+
+        printf("for the i = %ld Character, need to write %ld bytes\n", i, bytesToWrite);
 
         size_t elsWritten = fwrite(currentCharacter, bytesToWrite, 1, fp);
-
-        // TODO: how to write the rest of the inventory elements?
 
         if (elsWritten != 1) {
             if (fclose(fp) != 0) {
@@ -379,6 +405,19 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
     }
 
     return SUCCESS;
+}
+
+int saveCharactersToPath(struct Character *arr, size_t nmemb, const char *filename) {
+    int fd = open(filename, O_WRONLY);
+    if (fd == -1) {
+        return ERR_OPEN_FILE;
+    }
+
+    if (saveCharacters(arr, nmemb, fd) == 1) {
+        return 1;
+    }
+
+    return 0;
 }
 
 //* "Although the inventory field of each Character struct always contains MAX_ITEMS elements, only the used portion of the inventory (that is, inventorySize many elements) is written to (or read from) a character file."
@@ -428,7 +467,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         struct Character *currentCharacter = &(*ptr)[i];
 
         // Only read inventorySize many elements
-        if (fread(&(currentCharacter->characterID), sizeof(uint64_t), 1, fp) != 1 || fread(&(currentCharacter->socialClass), sizeof(enum CharacterSocialClass), 1, fp) != 1 || fread(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(&(currentCharacter->inventorySize), sizeof(size_t), 1, fp) != 1 || fread(currentCharacter->inventory, sizeof(struct ItemCarried), currentCharacter->inventorySize, fp) != 1) {
+        if (fread(&(currentCharacter->characterID), sizeof(uint64_t), 1, fp) != 1 || fread(&(currentCharacter->socialClass), sizeof(enum CharacterSocialClass), 1, fp) != 1 || fread(currentCharacter->profession, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(currentCharacter->name, DEFAULT_BUFFER_SIZE, 1, fp) != 1 || fread(&(currentCharacter->inventorySize), sizeof(size_t), 1, fp) != 1 || fread(currentCharacter->inventory, sizeof(struct ItemCarried) * currentCharacter->inventorySize, 1, fp) != 1) {
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
             if (fclose(fp) != 0) {
@@ -571,7 +610,26 @@ void playGame(struct ItemDetails *ptr, size_t nmemb) {
     printf("uid is: %d\n", getuid());
 }
 
-// int main(){
+// int main() {
+//     struct Character chaArr[] = {{.characterID = 1,
+//                                   .socialClass = MERCHANT,
+//                                   .profession = "inn-keeper",
+//                                   .name = "Edgar Crawford",
+//                                   .inventorySize = 2,
+//                                   .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
+//                                  {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
+//                                  {.characterID = 1, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 1}}},
+//                                  {.characterID = 1, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 1}}}};
+
+//     if(saveCharactersToPath(chaArr, 4, "characters06.dat")==0){
+//         printf("saved successfully");
+//     }
+
+//     int fd = open("characters06.dat", O_RDONLY);
+
+//     struct Character* result = NULL;
+//     size_t nmemb = 0;
+//     loadCharacters(&result, &nmemb, fd);
 
 //     return 0;
 // }
