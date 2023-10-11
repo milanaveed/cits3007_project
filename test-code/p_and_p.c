@@ -100,9 +100,9 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
   return SUCCESS;
 }
 
-// int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
-//   return 0;
-// }
+int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
+  return 0;
+}
 
 /**
  * @brief  Deserializes a file, including allocating enough memory to store the number of records
