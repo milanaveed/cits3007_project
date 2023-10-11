@@ -454,29 +454,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 
         printf("reading the i = %ld Character\n", i);
 
-        // Will read correctly if read the used Character as a whole
-        // if (i == 0) {
-        //     if (fread(currentCharacter, 1044, 1, fp) != 1 || fread((char *)currentCharacter + 1044, 32, 1, fp) != 1) {
-        //         printf("failed at reading fixed sized bytes");
-        //         free(*ptr);
-        //         *ptr = NULL; // Avoid dangling pointer
-        //         if (fclose(fp) != 0) {
-        //             return ERR_CLOSE_FILE;
-        //         }
-        //         return ERR_FILE_CORRUPTION;
-        //     }
-        // } else {
-        //     if (fread(currentCharacter, 1060, 1, fp) != 1) {
-        //         printf("failed at reading fixed sized bytes");
-        //         free(*ptr);
-        //         *ptr = NULL; // Avoid dangling pointer
-        //         if (fclose(fp) != 0) {
-        //             return ERR_CLOSE_FILE;
-        //         }
-        //         return ERR_FILE_CORRUPTION;
-        //     }
-        // }
-
         // Reading the fixed part
         if (fread(currentCharacter, bytesOfFixedFields, 1, fp) != 1) {
             free(*ptr);
