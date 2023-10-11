@@ -34,11 +34,6 @@
 #define ERR_DESERIALIZATION 1
 #define ERR_CLOSE_FD 0
 
-//  ----------------------------------------------------------------------------
-
-//* Inline comments should not say what the code is doing – anyone who understands the programming
-//language should be able to see that – but rather why it is doing it.
-// TODO: enable all sanitizer flags
 
 /**
  * @brief  Serializes an array of ItemDetails structs.
