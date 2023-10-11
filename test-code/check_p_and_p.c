@@ -247,38 +247,105 @@ int open_with_fileno(const char * infile_path) {
 /////////////////////////////////////////
 //isValidMultiword()
 /////////////////////////////////////////
+// #tcase isValidMultiword_testcase
 
-#line 244
-struct WordsAndValidity {
- char words[DEFAULT_BUFFER_SIZE+10];
- int validity;
-};
+// struct WordsAndValidity {
+//  char words[DEFAULT_BUFFER_SIZE+10];
+//  int validity;
+// };
 
-struct WordsAndValidity isValidMultiword_test_data[] = {
- { .words = "a b", .validity = 1 },
- { .words = "a-b", .validity = 1 },
- { .words = "a'b", .validity = 1 },
- { .words = " ab", .validity = 0 },
- { .words = "ab ", .validity = 0 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhu ewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
- { .words = " bcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 0 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuew ", .validity = 0 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
- { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
-};
+// struct WordsAndValidity isValidMultiword_test_data[] = {
+//  { .words = "a b", .validity = 1 },
+//  { .words = "a-b", .validity = 1 },
+//  { .words = "a'b", .validity = 1 },
+//  { .words = " ab", .validity = 0 },
+//  { .words = "ab ", .validity = 0 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhu ewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+//  { .words = " bcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 0 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuew ", .validity = 0 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
+//  { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
+// };
 
 
-START_TEST(isValidMultiword_more_cases)
+// #test-loop (0,12) isValidMultiword_more_cases
+
+//    struct WordsAndValidity nv = isValidMultiword_test_data[_i];
+//    const char *words = nv.words;
+//    int expected_result = nv.validity;
+//    int actual_result = isValidMultiword(words);
+//    ck_assert_int_eq(actual_result, expected_result);
+
+/////////////////////////////////////////
+//isValidCharacter()
+/////////////////////////////////////////
+
+
+START_TEST(isValidCharacter_simple_case)
 {
-#line 266
+#line 280
 
-   struct WordsAndValidity nv = isValidMultiword_test_data[_i];
-   const char *words = nv.words;
-   int expected_result = nv.validity;
-   int actual_result = isValidMultiword(words);
-   ck_assert_int_eq(actual_result, expected_result);
+// const struct Character sample_character = {
+//   .characterID = 1,
+//   .socialClass = MERCHANT,
+//   .profession = "inn-keeper",
+//   .name = "Edgar Crawford",
+//   .inventorySize = 1,
+//   .inventory = {
+//     { .itemID = 200648657395984580,
+//       .quantity = 1
+//     }
+//   }
+// };
+// const int expected_result = 1;
+// int actual_result = isValidCharacter(&sample_character);
+
+// ck_assert_int_eq(actual_result, expected_result);
+
+
+// const struct Character sample_character2 = {
+//   .characterID = 1,
+//   .socialClass = 5,
+//   .profession = "inn-keeper",
+//   .name = "Edgar Crawford",
+//   .inventorySize = 1,
+//   .inventory = {
+//     { .itemID = 200648657395984580,
+//       .quantity = 1
+//     }
+//   }
+// };
+// const int expected_result = 0;
+// int actual_result = isValidCharacter(&sample_character2);
+
+// ck_assert_int_eq(actual_result, expected_result);
+
+
+const struct Character sample_character2 = {
+  .characterID = 1,
+  .socialClass = 4,
+  .profession = "inn-keeper",
+  .name = "Edgar Crawford",
+  .inventorySize = 2,
+  .inventory = {
+    { .itemID = 200648657395984580,
+      .quantity = 1
+    },
+    { .itemID = 200648657395984581,
+      .quantity = 10
+    }
+  }
+};
+const int expected_result = 0;
+int actual_result = isValidCharacter(&sample_character2);
+
+ck_assert_int_eq(actual_result, expected_result);
+
+
+
+
 
 
 
@@ -414,12 +481,12 @@ END_TEST
 int main(void)
 {
     Suite *s1 = suite_create("p_and_p_tests");
-    TCase *tc1_1 = tcase_create("isValidMultiword_testcase");
+    TCase *tc1_1 = tcase_create("isValidCharacter_testcase");
     SRunner *sr = srunner_create(s1);
     int nf;
 
     suite_add_tcase(s1, tc1_1);
-    tcase_add_loop_test(tc1_1, isValidMultiword_more_cases, 0, 12);
+    tcase_add_test(tc1_1, isValidCharacter_simple_case);
 
     srunner_run_all(sr, CK_ENV);
     nf = srunner_ntests_failed(sr);

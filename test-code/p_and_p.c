@@ -168,7 +168,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     }
 
     if (nmemb == NULL) {
-        return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer
+        return ERR_NULL_POINTER; // Avoid dereferencing NULL pointer
     }
     *nmemb = num;
 
@@ -238,7 +238,7 @@ int isValidMultiword(const char *str) {
 /**
  * @brief  Checks whether an ItemDetails struct is valid.
  * @note   A valid ItemDetails format means that its name and desc fields are valid name and multi-word fields, respectively.
- * @param  *id: A pointer to an ItemDetails struct.
+ * @param  *id: A pointer to the ItemDetails struct.
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidItemDetails(const struct ItemDetails *id) {
@@ -253,11 +253,11 @@ int isValidItemDetails(const struct ItemDetails *id) {
  * @brief  Checks whether a Character struct is valid.
  * @note   A Character struct is valid iff: the profession field is a valid name field, the name field is a valid multi-word field, the total number of items carried does not exceed MAX_ITEMS, and inventorySize is less than or equal to MAX_ITEMS.
  * `inventorySize` is a 64-bit unsigned integer value
- * @param  *c: A pointer to a Character struct.
+ * @param  *c: A pointer to the Character struct.
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
 int isValidCharacter(const struct Character *c) {
-    if (!isValidName(c->profession) || !isValidMultiword(c->name) || c->inventorySize > MAX_ITEMS) {
+    if (c->socialClass > 4 || !isValidName(c->profession) || !isValidMultiword(c->name) || c->inventorySize > MAX_ITEMS) {
         return 0;
     }
 
