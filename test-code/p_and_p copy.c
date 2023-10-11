@@ -446,17 +446,14 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
 
     const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
-    printf("bytesOfFixedFields = %ld\n", bytesOfFixedFields);
 
     for (size_t i = 0; i < num; ++i) {
         struct Character *currentCharacter = &(*ptr)[i];
-        printf("######################################\n");
-
         printf("reading the i = %ld Character\n", i);
 
         // Will read correctly if read the used Character as a whole
         // if (i == 0) {
-        //     if (fread(currentCharacter, 1044, 1, fp) != 1 || fread((char *)currentCharacter + 1044, 32, 1, fp) != 1) {
+        //     if (fread(currentCharacter, 1076, 1, fp) != 1) {
         //         printf("failed at reading fixed sized bytes");
         //         free(*ptr);
         //         *ptr = NULL; // Avoid dangling pointer
@@ -477,7 +474,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         //     }
         // }
 
-        // Reading the fixed part
+        //! Read incorrectly if i divide the reading into two parts
         if (fread(currentCharacter, bytesOfFixedFields, 1, fp) != 1) {
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
@@ -487,10 +484,27 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             return ERR_FILE_CORRUPTION;
         }
 
-        // Reading the flexible part
         const size_t bytesOfUsedInventory = sizeof(struct ItemCarried) * currentCharacter->inventorySize;
-        if (fread((void *)currentCharacter + bytesOfFixedFields, bytesOfUsedInventory, 1, fp) != 1) {
-            printf("flag 3");
+
+        // printf("bytesOfFixedFields = %ld\n", bytesOfFixedFields);
+        // printf("inventorySize = %ld\n", currentCharacter->inventorySize);
+        // // printf("bytesOfUsedInventory = %ld\n", bytesOfUsedInventory);
+
+        // for (size_t j = 0; j < currentCharacter->inventorySize; ++j) {
+        //     if (fread(&currentCharacter->inventory[j], sizeof(struct ItemCarried), 1, fp) != 1) {
+        //         free(*ptr);
+        //         *ptr = NULL; // Avoid dangling pointer
+        //         if (fclose(fp) != 0) {
+        //             return ERR_CLOSE_FILE;
+        //         }
+        //         return ERR_FILE_CORRUPTION;
+        //     }
+        // }
+        
+        size_t totalBytesToRead = bytesOfFixedFields + bytesOfUsedInventory;
+        printf("total bytes to read for the current Character = %ld\n", totalBytesToRead);
+
+        if (fread(currentCharacter->inventory, bytesOfUsedInventory, 1, fp) != 1) {
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
             if (fclose(fp) != 0) {
@@ -499,7 +513,18 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             return ERR_FILE_CORRUPTION;
         }
 
-        // Print out the current Character
+
+        // Only read inventorySize many inventory elements
+        // Starts to go wrong here
+        // if (fread(currentCharacter, bytesOfFixedFields, 1, fp) != 1 || fread(currentCharacter->inventory, sizeof(struct ItemCarried) * currentCharacter->inventorySize, 1, fp) != 1) {
+        //     free(*ptr);
+        //     *ptr = NULL; // Avoid dangling pointer
+        //     if (fclose(fp) != 0) {
+        //         return ERR_CLOSE_FILE;
+        //     }
+        //     return ERR_FILE_CORRUPTION;
+        // }
+
         printf(".characterID = %ld\n", currentCharacter->characterID);
         printf(".socialClass = %d\n", currentCharacter->socialClass);
         printf(".profession = %s\n", currentCharacter->profession);
@@ -510,7 +535,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             printf(".itemID = %ld\n", currentCharacter->inventory[j].itemID);
             printf(".quantity = %ld\n", currentCharacter->inventory[j].quantity);
         }
-        printf("######################################\n");
 
         if (!isValidCharacter(currentCharacter)) {
             printf("failed at validating Character\n");
@@ -522,7 +546,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             return ERR_INVALID_TYPE;
         }
     }
-
     //?
     // if (nmemb == NULL) {
     //     nmemb = (size_t*) calloc(1, sizeof(size_t));
