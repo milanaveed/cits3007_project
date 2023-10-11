@@ -208,26 +208,26 @@ int open_with_fileno(const char * infile_path) {
 //// // implementation to test:
 //// ///////////////////////////////////////////////////////
 ////
+// #tcase isValidName_testcase
 
-#line 205
-// datatypes and data used for this testcase
+// // datatypes and data used for this testcase
 
-struct NameAndValidity {
- char name[DEFAULT_BUFFER_SIZE+10];
- int validity;
-};
+// struct NameAndValidity {
+//  char name[DEFAULT_BUFFER_SIZE+10];
+//  int validity;
+// };
 
-struct NameAndValidity isValidName_test_data[] = {
- { .name = "a b", .validity = 0 },
- { .name = "a-b", .validity = 1 },
- { .name = "a'b", .validity = 1 },
- { .name = " ab", .validity = 0 },
- { .name = "ab ", .validity = 0 },
- { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
- { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
- { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
- { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
-};
+// struct NameAndValidity isValidName_test_data[] = {
+//  { .name = "a b", .validity = 0 },
+//  { .name = "a-b", .validity = 1 },
+//  { .name = "a'b", .validity = 1 },
+//  { .name = " ab", .validity = 0 },
+//  { .name = "ab ", .validity = 0 },
+//  { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+//  { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
+//  { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
+//  { .name = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
+// };
 
 // #test isValidName_simple_case
 //    const char *name = "bob";
@@ -235,15 +235,13 @@ struct NameAndValidity isValidName_test_data[] = {
 //    int actual_result = isValidName(name);
 //    ck_assert_int_eq(actual_result, expected_result);
 
-START_TEST(isValidName_more_cases)
-{
-#line 231
+// #test-loop (0,9) isValidName_more_cases
 
-   struct NameAndValidity nv = isValidName_test_data[_i];
-   const char *name = nv.name;
-   int expected_result = nv.validity;
-   int actual_result = isValidName(name);
-   ck_assert_int_eq(actual_result, expected_result);
+//    struct NameAndValidity nv = isValidName_test_data[_i];
+//    const char *name = nv.name;
+//    int expected_result = nv.validity;
+//    int actual_result = isValidName(name);
+//    ck_assert_int_eq(actual_result, expected_result);
 
 /////////////////////////////////////////////////////////
 //// Uncomment the following if you have a saveItemDetails()
@@ -299,292 +297,77 @@ START_TEST(isValidName_more_cases)
 ////////////////////////////////////////////////////////////
 //// saveCharacters()
 ////////////////////////////////////////////////////////////
-// #tcase saveCharacters_testcase
 
-// #test saveCharacters_works
-// struct Character chaArr[] = { {
-//   .characterID = 1,
-//   .socialClass = MERCHANT,
-//   .profession = "inn-keeper",
-//   .name = "Edgar Crawford",
-//   .inventorySize = 1,
-//   .inventory = {
-//     { .itemID = 200648657395984580,
-//       .quantity = 1
-//     }
-//   }
-// } };
 
-// size_t chaArr_size = sizeof(chaArr)/sizeof(struct Character);
+START_TEST(saveCharacters_works)
+{
+#line 296
+struct Character chaArr[] = {{.characterID = 1,
+                              .socialClass = MERCHANT,
+                              .profession = "inn-keeper",
+                              .name = "Edgar Crawford",
+                              .inventorySize = 2,
+                              .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
+                             {.characterID = 2, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 2}}},
+                             {.characterID = 3, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 3}}},
+                             {.characterID = 4, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984584, .quantity = 4}}}};
 
-// char* file_conts = NULL;
-// size_t file_size = 0;
+size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
 
-// FILE *ofp = fopen("characters01.dat", "wb");
-// assert(ofp!=NULL);
+char *file_conts = NULL;
+size_t file_size = 0;
 
-// int fd = fileno(ofp);
-// assert(fd!=-1);
-// int res = saveCharacters(chaArr, chaArr_size, fd);
-// assert(res==0);
-// fclose(ofp);
+FILE *ofp = fopen("characters05.dat", "wb");
+assert(ofp != NULL);
 
-// res = slurp_file("characters01.dat", "rb", &file_conts, &file_size);
-// assert(res==0);
+int fd = fileno(ofp);
+assert(fd != -1);
+int res = saveCharacters(chaArr, chaArr_size, fd);
+assert(res == 0);
+fclose(ofp);
 
-// const size_t expected_size = sizeof(uint64_t) + sizeof(struct Character);
+res = slurp_file("characters05.dat", "rb", &file_conts, &file_size);
+assert(res == 0);
 
-// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
+const size_t expected_size = sizeof(uint64_t) + count_struct_data_size(chaArr, chaArr_size);
 
-// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+printf("expected_size = %ld bytes\n", expected_size);
 
-// // metadata should be `1`
-// size_t actual_read_metadata = 0;
-// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
+fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
 
-// // following the metadata should be our struct
-// struct Character actual_read_item = { 0 };
-// memcpy(&actual_read_item, file_conts + sizeof(size_t), sizeof(struct Character));
+ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
 
-// assert_characters_are_equal(&actual_read_item, &(chaArr[0]));
+// metadata should be `1`
+size_t actual_read_metadata = 0;
+memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
+printf("chaArray size = %ld\n", actual_read_metadata);
 
-// if (file_conts != NULL)
-//     free(file_conts);
+// following the metadata should be our struct
+struct Character actual_read_item1 = {0};
+memcpy(&actual_read_item1, file_conts + sizeof(size_t), 1076);
 
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-// #tcase saveCharacters_testcase
+assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
 
-// #test saveCharacters_works
-// struct Character chaArr[] = {{.characterID = 1,
-//                               .socialClass = MERCHANT,
-//                               .profession = "inn-keeper",
-//                               .name = "Edgar Crawford",
-//                               .inventorySize = 1,
-//                               .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
-//                              {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}}};
+struct Character actual_read_item2 = {0};
+memcpy(&actual_read_item2, file_conts + sizeof(size_t) + 1076, 1060);
+assert_characters_are_equal(&actual_read_item2, &(chaArr[1]));
 
-// size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
+struct Character actual_read_item3 = {0};
+memcpy(&actual_read_item3, file_conts + sizeof(size_t) + 1076+1060, 1060);
+assert_characters_are_equal(&actual_read_item3, &(chaArr[2]));
 
-// char *file_conts = NULL;
-// size_t file_size = 0;
 
-// FILE *ofp = fopen("characters02.dat", "wb");
-// assert(ofp != NULL);
+struct Character actual_read_item4 = {0};
+memcpy(&actual_read_item4, file_conts + sizeof(size_t) + 1076+1060+1060, 1060);
+assert_characters_are_equal(&actual_read_item4, &(chaArr[3]));
 
-// int fd = fileno(ofp);
-// assert(fd != -1);
-// int res = saveCharacters(chaArr, chaArr_size, fd);
-// assert(res == 0);
-// fclose(ofp);
 
-// res = slurp_file("characters02.dat", "rb", &file_conts, &file_size);
-// assert(res == 0);
+if (file_conts != NULL)
+    free(file_conts);
 
-// const size_t expected_size = sizeof(uint64_t) + sizeof(chaArr);
 
-// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
 
-// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
-
-// // metadata should be `1`
-// size_t actual_read_metadata = 0;
-// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
-
-// // following the metadata should be our struct
-// struct Character actual_read_item1 = {0};
-// memcpy(&actual_read_item1, file_conts + sizeof(size_t), sizeof(struct Character));
-
-// assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
-
-// struct Character actual_read_item2 = {0};
-// memcpy(&actual_read_item2, file_conts + sizeof(size_t) + sizeof(struct Character), sizeof(struct Character));
-
-// if (file_conts != NULL)
-//     free(file_conts);
-
-
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-// #tcase saveCharacters_testcase
-
-// #test saveCharacters_works
-// struct Character chaArr[] = {{.characterID = 1,
-//                               .socialClass = MERCHANT,
-//                               .profession = "inn-keeper",
-//                               .name = "Edgar Crawford",
-//                               .inventorySize = 2,
-//                               .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
-//                              {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}}};
-
-// size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
-
-// char *file_conts = NULL;
-// size_t file_size = 0;
-
-// FILE *ofp = fopen("characters03.dat", "wb");
-// assert(ofp != NULL);
-
-// int fd = fileno(ofp);
-// assert(fd != -1);
-// int res = saveCharacters(chaArr, chaArr_size, fd);
-// assert(res == 0);
-// fclose(ofp);
-
-// res = slurp_file("characters03.dat", "rb", &file_conts, &file_size);
-// assert(res == 0);
-
-// const size_t expected_size = sizeof(uint64_t) + sizeof(chaArr);
-
-// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
-
-// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
-
-// // metadata should be `1`
-// size_t actual_read_metadata = 0;
-// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
-
-// // following the metadata should be our struct
-// struct Character actual_read_item1 = {0};
-// memcpy(&actual_read_item1, file_conts + sizeof(size_t), sizeof(struct Character));
-
-// assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
-
-// struct Character actual_read_item2 = {0};
-// memcpy(&actual_read_item2, file_conts + sizeof(size_t) + sizeof(struct Character), sizeof(struct Character));
-
-// if (file_conts != NULL)
-//     free(file_conts);
-
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-//////////////////////////////////////////////
-// #tcase saveCharacters_testcase
-
-// #test saveCharacters_works
-// struct Character chaArr[] = {{.characterID = 1,
-//                               .socialClass = MERCHANT,
-//                               .profession = "inn-keeper",
-//                               .name = "Edgar Crawford",
-//                               .inventorySize = 2,
-//                               .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
-//                              {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
-//                              {.characterID = 1, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 1}}},
-//                              {.characterID = 1, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 1}}}};
-
-// size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
-
-// char *file_conts = NULL;
-// size_t file_size = 0;
-
-// FILE *ofp = fopen("characters04.dat", "wb");
-// assert(ofp != NULL);
-
-// int fd = fileno(ofp);
-// assert(fd != -1);
-// int res = saveCharacters(chaArr, chaArr_size, fd);
-// assert(res == 0);
-// fclose(ofp);
-
-// res = slurp_file("characters04.dat", "rb", &file_conts, &file_size);
-// assert(res == 0);
-
-// const size_t expected_size = sizeof(uint64_t) + sizeof(chaArr);
-
-// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
-
-// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
-
-// // metadata should be `1`
-// size_t actual_read_metadata = 0;
-// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
-
-// // following the metadata should be our struct
-// struct Character actual_read_item1 = {0};
-// memcpy(&actual_read_item1, file_conts + sizeof(size_t), sizeof(struct Character));
-
-// assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
-
-// struct Character actual_read_item2 = {0};
-// memcpy(&actual_read_item2, file_conts + sizeof(size_t) + sizeof(struct Character), sizeof(struct Character));
-
-// if (file_conts != NULL)
-//     free(file_conts);
-
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-// #tcase saveCharacters_testcase
-
-// #test saveCharacters_works
-// struct Character chaArr[] = {{.characterID = 1,
-//                               .socialClass = MERCHANT,
-//                               .profession = "inn-keeper",
-//                               .name = "Edgar Crawford",
-//                               .inventorySize = 2,
-//                               .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
-//                              {.characterID = 2, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 2}}},
-//                              {.characterID = 3, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 3}}},
-//                              {.characterID = 4, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984584, .quantity = 4}}}};
-
-// size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
-
-// char *file_conts = NULL;
-// size_t file_size = 0;
-
-// FILE *ofp = fopen("characters05.dat", "wb");
-// assert(ofp != NULL);
-
-// int fd = fileno(ofp);
-// assert(fd != -1);
-// int res = saveCharacters(chaArr, chaArr_size, fd);
-// assert(res == 0);
-// fclose(ofp);
-
-// res = slurp_file("characters05.dat", "rb", &file_conts, &file_size);
-// assert(res == 0);
-
-// const size_t expected_size = sizeof(uint64_t) + count_struct_data_size(chaArr, chaArr_size);
-
-// printf("expected_size = %ld bytes\n", expected_size);
-
-// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
-
-// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
-
-// // metadata should be `1`
-// size_t actual_read_metadata = 0;
-// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
-// printf("chaArray size = %ld\n", actual_read_metadata);
-
-// // following the metadata should be our struct
-// struct Character actual_read_item1 = {0};
-// memcpy(&actual_read_item1, file_conts + sizeof(size_t), 1076);
-
-// assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
-
-// struct Character actual_read_item2 = {0};
-// memcpy(&actual_read_item2, file_conts + sizeof(size_t) + 1076, 1060);
-// assert_characters_are_equal(&actual_read_item2, &(chaArr[1]));
-
-// struct Character actual_read_item3 = {0};
-// memcpy(&actual_read_item3, file_conts + sizeof(size_t) + 1076+1060, 1060);
-// assert_characters_are_equal(&actual_read_item3, &(chaArr[2]));
-
-
-// struct Character actual_read_item4 = {0};
-// memcpy(&actual_read_item4, file_conts + sizeof(size_t) + 1076+1060+1060, 1060);
-// assert_characters_are_equal(&actual_read_item4, &(chaArr[3]));
-
-
-// if (file_conts != NULL)
-//     free(file_conts);
 
 // vim: syntax=c :
 }
@@ -593,12 +376,12 @@ END_TEST
 int main(void)
 {
     Suite *s1 = suite_create("p_and_p_tests");
-    TCase *tc1_1 = tcase_create("isValidName_testcase");
+    TCase *tc1_1 = tcase_create("saveCharacters_testcase");
     SRunner *sr = srunner_create(s1);
     int nf;
 
     suite_add_tcase(s1, tc1_1);
-    tcase_add_loop_test(tc1_1, isValidName_more_cases, 0, 9);
+    tcase_add_test(tc1_1, saveCharacters_works);
 
     srunner_run_all(sr, CK_ENV);
     nf = srunner_ntests_failed(sr);
