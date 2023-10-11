@@ -348,11 +348,6 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
 
     const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
 
-    printf("in saveCharacters(): struct fixed_fields = %ld bytes\n", bytesOfFixedFields);
-    printf("size of struct Character = %ld bytes\n", sizeof(struct Character));
-    printf("struct ItemCarried.itemID = %ld bytes\n", sizeof(uint64_t));
-    printf("struct ItemCarried.quantity = %ld bytes\n", sizeof(size_t));
-
     for (size_t i = 0; i < nmemb; i++) {
         const struct Character *currentCharacter = &arr[i];
 
@@ -365,10 +360,6 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
 
         const size_t bytesOfUsedInventory = sizeof(struct ItemCarried) * currentCharacter->inventorySize;
         const size_t bytesToWrite = bytesOfFixedFields + bytesOfUsedInventory;
-
-        printf("writing i= %ld Character\n", i);
-
-        printf("for the i = %ld Character, need to write %ld bytes\n", i, bytesToWrite);
 
         size_t elsWritten = fwrite(currentCharacter, bytesToWrite, 1, fp);
 
@@ -446,13 +437,9 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     }
 
     const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) + DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
-    printf("bytesOfFixedFields = %ld\n", bytesOfFixedFields);
 
     for (size_t i = 0; i < num; ++i) {
         struct Character *currentCharacter = &(*ptr)[i];
-        printf("######################################\n");
-
-        printf("reading the i = %ld Character\n", i);
 
         // Reading the fixed part
         if (fread(currentCharacter, bytesOfFixedFields, 1, fp) != 1) {
@@ -466,8 +453,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
 
         // Reading the flexible part
         const size_t bytesOfUsedInventory = sizeof(struct ItemCarried) * currentCharacter->inventorySize;
-        if (fread((void *)currentCharacter + bytesOfFixedFields, bytesOfUsedInventory, 1, fp) != 1) {
-            printf("flag 3");
+        if (fread((char *)currentCharacter + bytesOfFixedFields, bytesOfUsedInventory, 1, fp) != 1) {
             free(*ptr);
             *ptr = NULL; // Avoid dangling pointer
             if (fclose(fp) != 0) {
@@ -476,21 +462,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
             return ERR_FILE_CORRUPTION;
         }
 
-        // Print out the current Character
-        printf(".characterID = %ld\n", currentCharacter->characterID);
-        printf(".socialClass = %d\n", currentCharacter->socialClass);
-        printf(".profession = %s\n", currentCharacter->profession);
-        printf(".name = %s\n", currentCharacter->name);
-        printf(".inventorySize = %ld\n", currentCharacter->inventorySize);
-        for (size_t j = 0; j < currentCharacter->inventorySize; ++j) {
-            printf("for the index=%ld inventory:\n", j);
-            printf(".itemID = %ld\n", currentCharacter->inventory[j].itemID);
-            printf(".quantity = %ld\n", currentCharacter->inventory[j].quantity);
-        }
-        printf("######################################\n");
-
         if (!isValidCharacter(currentCharacter)) {
-            printf("failed at validating Character\n");
             free(*ptr);
             *ptr = NULL;
             if (fclose(fp) != 0) {
