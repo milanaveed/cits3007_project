@@ -235,6 +235,43 @@ int open_with_fileno(const char * infile_path) {
 //    int actual_result = isValidName(name);
 //    ck_assert_int_eq(actual_result, expected_result);
 
+
+/////////////////////////////////////////
+//isValidMultiword()
+/////////////////////////////////////////
+#tcase isValidMultiword_testcase
+
+struct WordsAndValidity {
+ char words[DEFAULT_BUFFER_SIZE+10];
+ int validity;
+};
+
+struct WordsAndValidity isValidMultiword_test_data[] = {
+ { .words = "a b", .validity = 1 },
+ { .words = "a-b", .validity = 1 },
+ { .words = "a'b", .validity = 1 },
+ { .words = " ab", .validity = 0 },
+ { .words = "ab ", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhu ewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+ { .words = " bcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuew ", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
+};
+
+
+#test-loop (0,12) isValidMultiword_more_cases
+
+   struct WordsAndValidity nv = isValidMultiword_test_data[_i];
+   const char *words = nv.words;
+   int expected_result = nv.validity;
+   int actual_result = isValidMultiword(words);
+   ck_assert_int_eq(actual_result, expected_result);
+
+
+
 /////////////////////////////////////////////////////////
 //// Uncomment the following if you have a saveItemDetails()
 //// implementation to test:

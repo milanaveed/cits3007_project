@@ -243,6 +243,45 @@ int open_with_fileno(const char * infile_path) {
 //    int actual_result = isValidName(name);
 //    ck_assert_int_eq(actual_result, expected_result);
 
+
+/////////////////////////////////////////
+//isValidMultiword()
+/////////////////////////////////////////
+
+#line 244
+struct WordsAndValidity {
+ char words[DEFAULT_BUFFER_SIZE+10];
+ int validity;
+};
+
+struct WordsAndValidity isValidMultiword_test_data[] = {
+ { .words = "a b", .validity = 1 },
+ { .words = "a-b", .validity = 1 },
+ { .words = "a'b", .validity = 1 },
+ { .words = " ab", .validity = 0 },
+ { .words = "ab ", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhu ewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 1 },
+ { .words = " bcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewi", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuew ", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuiryuewie", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 },
+ { .words = "abcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuryuibjkwheuiryuewiyuirehuodhsuiwhudiwgoeyurghgfdhwigdeuirwtyertwbhfdjkhjfdwfewrewabcdjioewuuiytrhjksdjkfhuiewihueoweuyheuuiryuewie", .validity = 0 }
+};
+
+
+START_TEST(isValidMultiword_more_cases)
+{
+#line 266
+
+   struct WordsAndValidity nv = isValidMultiword_test_data[_i];
+   const char *words = nv.words;
+   int expected_result = nv.validity;
+   int actual_result = isValidMultiword(words);
+   ck_assert_int_eq(actual_result, expected_result);
+
+
+
 /////////////////////////////////////////////////////////
 //// Uncomment the following if you have a saveItemDetails()
 //// implementation to test:
@@ -298,73 +337,72 @@ int open_with_fileno(const char * infile_path) {
 //// saveCharacters()
 ////////////////////////////////////////////////////////////
 
+// #tcase saveCharacters_testcase
 
-START_TEST(saveCharacters_works)
-{
-#line 296
-struct Character chaArr[] = {{.characterID = 1,
-                              .socialClass = MERCHANT,
-                              .profession = "inn-keeper",
-                              .name = "Edgar Crawford",
-                              .inventorySize = 2,
-                              .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
-                             {.characterID = 2, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 2}}},
-                             {.characterID = 3, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 3}}},
-                             {.characterID = 4, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984584, .quantity = 4}}}};
+// #test saveCharacters_works
+// struct Character chaArr[] = {{.characterID = 1,
+//                               .socialClass = MERCHANT,
+//                               .profession = "inn-keeper",
+//                               .name = "Edgar Crawford",
+//                               .inventorySize = 2,
+//                               .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
+//                              {.characterID = 2, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 2}}},
+//                              {.characterID = 3, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 3}}},
+//                              {.characterID = 4, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984584, .quantity = 4}}}};
 
-size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
+// size_t chaArr_size = sizeof(chaArr) / sizeof(struct Character);
 
-char *file_conts = NULL;
-size_t file_size = 0;
+// char *file_conts = NULL;
+// size_t file_size = 0;
 
-FILE *ofp = fopen("characters05.dat", "wb");
-assert(ofp != NULL);
+// FILE *ofp = fopen("characters05.dat", "wb");
+// assert(ofp != NULL);
 
-int fd = fileno(ofp);
-assert(fd != -1);
-int res = saveCharacters(chaArr, chaArr_size, fd);
-assert(res == 0);
-fclose(ofp);
+// int fd = fileno(ofp);
+// assert(fd != -1);
+// int res = saveCharacters(chaArr, chaArr_size, fd);
+// assert(res == 0);
+// fclose(ofp);
 
-res = slurp_file("characters05.dat", "rb", &file_conts, &file_size);
-assert(res == 0);
+// res = slurp_file("characters05.dat", "rb", &file_conts, &file_size);
+// assert(res == 0);
 
-const size_t expected_size = sizeof(uint64_t) + count_struct_data_size(chaArr, chaArr_size);
+// const size_t expected_size = sizeof(uint64_t) + count_struct_data_size(chaArr, chaArr_size);
 
-printf("expected_size = %ld bytes\n", expected_size);
+// printf("expected_size = %ld bytes\n", expected_size);
 
-fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
+// fprintf(stderr, "%s:%d: actual file_size = %zu\n", __FILE__, __LINE__, file_size);
 
-ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
+// ck_assert_msg(file_size == expected_size, "size of written file should eq expected size");
 
-// metadata should be `1`
-size_t actual_read_metadata = 0;
-memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
-ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
-printf("chaArray size = %ld\n", actual_read_metadata);
+// // metadata should be `1`
+// size_t actual_read_metadata = 0;
+// memcpy(&actual_read_metadata, file_conts, sizeof(size_t));
+// ck_assert_msg(actual_read_metadata == chaArr_size, "size of written metadata should be as expected");
+// printf("chaArray size = %ld\n", actual_read_metadata);
 
-// following the metadata should be our struct
-struct Character actual_read_item1 = {0};
-memcpy(&actual_read_item1, file_conts + sizeof(size_t), 1076);
+// // following the metadata should be our struct
+// struct Character actual_read_item1 = {0};
+// memcpy(&actual_read_item1, file_conts + sizeof(size_t), 1076);
 
-assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
+// assert_characters_are_equal(&actual_read_item1, &(chaArr[0]));
 
-struct Character actual_read_item2 = {0};
-memcpy(&actual_read_item2, file_conts + sizeof(size_t) + 1076, 1060);
-assert_characters_are_equal(&actual_read_item2, &(chaArr[1]));
+// struct Character actual_read_item2 = {0};
+// memcpy(&actual_read_item2, file_conts + sizeof(size_t) + 1076, 1060);
+// assert_characters_are_equal(&actual_read_item2, &(chaArr[1]));
 
-struct Character actual_read_item3 = {0};
-memcpy(&actual_read_item3, file_conts + sizeof(size_t) + 1076+1060, 1060);
-assert_characters_are_equal(&actual_read_item3, &(chaArr[2]));
-
-
-struct Character actual_read_item4 = {0};
-memcpy(&actual_read_item4, file_conts + sizeof(size_t) + 1076+1060+1060, 1060);
-assert_characters_are_equal(&actual_read_item4, &(chaArr[3]));
+// struct Character actual_read_item3 = {0};
+// memcpy(&actual_read_item3, file_conts + sizeof(size_t) + 1076+1060, 1060);
+// assert_characters_are_equal(&actual_read_item3, &(chaArr[2]));
 
 
-if (file_conts != NULL)
-    free(file_conts);
+// struct Character actual_read_item4 = {0};
+// memcpy(&actual_read_item4, file_conts + sizeof(size_t) + 1076+1060+1060, 1060);
+// assert_characters_are_equal(&actual_read_item4, &(chaArr[3]));
+
+
+// if (file_conts != NULL)
+//     free(file_conts);
 
 
 
@@ -376,12 +414,12 @@ END_TEST
 int main(void)
 {
     Suite *s1 = suite_create("p_and_p_tests");
-    TCase *tc1_1 = tcase_create("saveCharacters_testcase");
+    TCase *tc1_1 = tcase_create("isValidMultiword_testcase");
     SRunner *sr = srunner_create(s1);
     int nf;
 
     suite_add_tcase(s1, tc1_1);
-    tcase_add_test(tc1_1, saveCharacters_works);
+    tcase_add_loop_test(tc1_1, isValidMultiword_more_cases, 0, 12);
 
     srunner_run_all(sr, CK_ENV);
     nf = srunner_ntests_failed(sr);

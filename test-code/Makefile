@@ -29,7 +29,7 @@ safety_features = \
 
 SHELL 	= bash
 CC 			= gcc
-override CFLAGS	+= -D_POSIX_C_SOURCE=200809L -g -I. -O0 -std=c11 -pedantic -Wall -Wextra -Wconversion \
+override CFLAGS	+= -D_POSIX_C_SOURCE=200809L -g -I. -O2 -std=c11 -pedantic -Wall -Wextra -Wconversion \
         $(check_c_flags) $(safety_features)
 LDFLAGS = $(check_ld_flags) $(safety_features)
 
