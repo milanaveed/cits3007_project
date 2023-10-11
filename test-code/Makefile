@@ -23,12 +23,13 @@ check_ld_flags 	:= $(shell pkg-config --libs check)
 # suggest adding ",leak"
 safety_features = \
 	-fno-omit-frame-pointer \
-	-fsanitize=address,undefined \
-	-fstack-protector-strong
+	-fsanitize=address,undefined,leak \
+	-fstack-protector-strong \
+	-pthread
 
 SHELL 	= bash
 CC 			= gcc
-override CFLAGS	+= -D_POSIX_C_SOURCE=200809L -g -I. -std=c11 -pedantic -Wall -Wextra -Wconversion \
+override CFLAGS	+= -D_POSIX_C_SOURCE=200809L -g -I. -O0 -std=c11 -pedantic -Wall -Wextra -Wconversion \
         $(check_c_flags) $(safety_features)
 LDFLAGS = $(check_ld_flags) $(safety_features)
 
