@@ -38,13 +38,7 @@
 //  ----------------------------------------------------------------------------
 
 //* Inline comments should not say what the code is doing – anyone who understands the programming language should be able to see that – but rather why it is doing it.
-//? Arran said in the lecture that, one of the best practises is making sure that we zero out all of the memory there before we write it to a file. What does that mean?
-// We have to zero out buffers when we write them to disc
-// If we read something from disc, we assume that it's in a nice sanitised format and everything has been zeroed out. We want to be careful when we read stuff in. We validate it's in the format we expect.
-// TODO: "Although the inventory field of each Character struct always contains MAX_ITEMS elements, only the used portion of the inventory (that is, inventorySize many elements) is written to (or read from) a character file." : improve load and save Characters functions
 // TODO: enable all sanitizer flags
-// todo: be careful with memory leak
-// TODO: use fflush() instead of fclose(), don't close the file pointer check the help forum
 
 /**
  * @brief  Serializes an array of ItemDetails structs.
@@ -57,6 +51,10 @@
 int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     if (arr == NULL) {
         return ERR_NULL_POINTER;
+    }
+
+    if (nmemb == 0) {
+        return ERR_SIZE_0;
     }
 
     FILE *fp = fdopen(fd, "wb");
@@ -75,12 +73,18 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
         const struct ItemDetails *currentItem = &arr[i];
 
         if (!isValidItemDetails(currentItem)) {
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_INVALID_TYPE;
         }
 
         size_t elsWritten = fwrite(currentItem, sizeof(struct ItemDetails), 1, fp);
 
         if (elsWritten != 1) {
+            if (fclose(fp) != 0) {
+                return ERR_CLOSE_FILE;
+            }
             return ERR_FILE_CORRUPTION;
         }
     }
@@ -96,25 +100,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     return SUCCESS;
 }
 
-// /**
-//  * @brief  Save ItemDetails database to disk.
-//  * @note
-//  * @param  arr:
-//  * @param  nmemb:
-//  * @param  filename:
-//  * @retval
-//  */
 // int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const char *filename) {
-//     int fd = open(filename, O_WRONLY);
-//     if (fd == -1) {
-//         return ERR_OPEN_FILE;
-//     }
-
-//     if (saveItemDetails(arr, nmemb, fd) == 1) {
-//         return 1;
-//     }
-
-//     return 0;
 // }
 
 /**
@@ -125,13 +111,7 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
-// struct ItemDetails *p = NULL;
-// size_t numItems = 0;
-// loadItemDetails(&p, &numItems, fd)
 int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
-    //?! Are ptr and nmemb NULL pointers?
-    //? If not, should we reallocate the memory?
-
     FILE *fp = fdopen(fd, "rb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
@@ -187,9 +167,8 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
         }
     }
 
-    //! Do we assume the pointers passed in are NULL pointers?
     if (nmemb == NULL) {
-        nmemb = (size_t *)calloc(1, sizeof(size_t));
+        return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer
     }
     *nmemb = num;
 
@@ -209,19 +188,6 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
 
     return SUCCESS;
 }
-
-/*
- Let's break down the expression `struct ItemDetails *currentItem = &(*ptr)[i];` step by step:
-
-1. **`(*ptr)`**: `ptr` is a pointer to a pointer to `struct ItemDetails`. When you dereference `ptr` with `*ptr`, you get a pointer to `struct ItemDetails`.
-
-2. **`(*ptr)[i]`**: Now that we have a pointer to `struct ItemDetails`, we can treat it as an array of `struct ItemDetails`. We use the indexing operator `[]` to access the `i`-th element of this array. So, `(*ptr)[i]` gives us the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.
-
-3. **`&(*ptr)[i]`**: Next, we take the address of the `i`-th `struct ItemDetails` object using the address-of operator `&`. This gives us a pointer to the `i`-th `struct ItemDetails` object.
-
-4. **`struct ItemDetails *currentItem = &(*ptr)[i];`**: Finally, we assign the address of the `i`-th `struct ItemDetails` object to the pointer `currentItem` of type `struct ItemDetails *`.
-
-So, after this line of code, `currentItem` is a pointer to the `i`-th `struct ItemDetails` object in the array pointed to by `*ptr`.*/
 
 /**
  * @brief  Checks whether a string constitutes a valid name field.
@@ -269,7 +235,6 @@ int isValidMultiword(const char *str) {
     return 1;
 }
 
-//* done, passed moodle, not improved
 /**
  * @brief  Checks whether an ItemDetails struct is valid.
  * @note   A valid ItemDetails format means that its name and desc fields are valid name and multi-word fields, respectively.
@@ -284,7 +249,6 @@ int isValidItemDetails(const struct ItemDetails *id) {
     return 1;
 }
 
-//* done, passed moodle, not improved
 /**
  * @brief  Checks whether a Character struct is valid.
  * @note   A Character struct is valid iff: the profession field is a valid name field, the name field is a valid multi-word field, the total number of items carried does not exceed MAX_ITEMS, and inventorySize is less than or equal to MAX_ITEMS.
@@ -308,7 +272,6 @@ int isValidCharacter(const struct Character *c) {
     return 1;
 }
 
-//* "The file does not necessarily store the full, MAX_ITEMS long inventory array. If the inventorySize is 2, then only 2 records from that array are stored in the file."
 /**
  * @brief  Saves characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
  * @note
@@ -318,8 +281,8 @@ int isValidCharacter(const struct Character *c) {
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
-    if (nmemb <= 0) {
-        return ERR_INVALID_SIZE;
+    if (nmemb == 0) {
+        return ERR_SIZE_0;
     }
 
     if (arr == NULL) {
@@ -447,10 +410,9 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
         }
     }
 
-    //?
-    // if (nmemb == NULL) {
-    //     nmemb = (size_t*) calloc(1, sizeof(size_t));
-    // }
+    if (nmemb == NULL) {
+        return ERR_NULL_POINTER; // Avoid dereferencing NULL pointer
+    }
     *nmemb = num;
 
     if (fflush(fp) != 0) {
@@ -576,27 +538,3 @@ void playGame(struct ItemDetails *ptr, size_t nmemb) {
     printf("euid is: %d\n", geteuid());
     printf("uid is: %d\n", getuid());
 }
-
-// int main() {
-//     struct Character chaArr[] = {{.characterID = 1,
-//                                   .socialClass = MERCHANT,
-//                                   .profession = "inn-keeper",
-//                                   .name = "Edgar Crawford",
-//                                   .inventorySize = 2,
-//                                   .inventory = {{.itemID = 200648657395984580, .quantity = 1}, {.itemID = 200648657395984581, .quantity = 2}}},
-//                                  {.characterID = 1, .socialClass = MERCHANT, .profession = "inn-keeper", .name = "Edgar Crawford", .inventorySize = 1, .inventory = {{.itemID = 200648657395984580, .quantity = 1}}},
-//                                  {.characterID = 1, .socialClass = GENTRY, .profession = "inn-keeper", .name = "Edgar Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984582, .quantity = 1}}},
-//                                  {.characterID = 1, .socialClass = GENTRY, .profession = "dreamer", .name = "Edga Craw", .inventorySize = 1, .inventory = {{.itemID = 200648657395984583, .quantity = 1}}}};
-
-//     if(saveCharactersToPath(chaArr, 4, "characters06.dat")==0){
-//         printf("saved successfully");
-//     }
-
-//     int fd = open("characters06.dat", O_RDONLY);
-
-//     struct Character* result = NULL;
-//     size_t nmemb = 0;
-//     loadCharacters(&result, &nmemb, fd);
-
-//     return 0;
-// }
