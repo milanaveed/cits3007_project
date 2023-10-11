@@ -55,10 +55,6 @@
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
-    if (fd < 0) {
-        return ERR_INVALID_FD;
-    }
-
     if (arr == NULL) {
         return ERR_NULL_POINTER;
     }
@@ -129,12 +125,12 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
  * @param  fd: A file descriptor for the file being deserialized.
  * @retval Returns 1 if an error occurs, and no net memory should be allocated (any allocated memory should be freed). Otherwise, it returns 0.
  */
+// struct ItemDetails *p = NULL;
+// size_t numItems = 0;
+// loadItemDetails(&p, &numItems, fd)
 int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     //?! Are ptr and nmemb NULL pointers?
     //? If not, should we reallocate the memory?
-    if (fd < 0) {
-        return ERR_INVALID_FD;
-    }
 
     FILE *fp = fdopen(fd, "rb");
     if (fp == NULL) {
@@ -149,11 +145,11 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
         return ERR_FILE_CORRUPTION;
     }
 
-    if (num == 0) { // Ensure that 0 is never passed as a size argument to calloc(). Related to CWE-687
+    if (num == 0) { // Ensure that 0 is never passed as a size argument to calloc(). (CWE-687)
         return ERR_SIZE_0;
     }
 
-    if (num > SIZE_MAX / sizeof(struct ItemDetails)) { // Prevent wrapping when calculating the size in calloc(). Related to CWE-190, CWE-128
+    if (num > SIZE_MAX / sizeof(struct ItemDetails)) { // Prevent wrapping when calculating the size in calloc(). (CWE-190, CWE-128)
         return ERR_WRAPPING;
     }
 
@@ -322,10 +318,6 @@ int isValidCharacter(const struct Character *c) {
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
-    if (fd < 0) {
-        return ERR_INVALID_FD;
-    }
-
     if (nmemb <= 0) {
         return ERR_INVALID_SIZE;
     }
@@ -381,19 +373,6 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
     return SUCCESS;
 }
 
-int saveCharactersToPath(struct Character *arr, size_t nmemb, const char *filename) {
-    int fd = open(filename, O_WRONLY);
-    if (fd == -1) {
-        return ERR_OPEN_FILE;
-    }
-
-    if (saveCharacters(arr, nmemb, fd) == 1) {
-        return 1;
-    }
-
-    return 0;
-}
-
 /**
  * @brief  Loads characters in the Character file format, and validates records using the isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
  * @note
@@ -403,10 +382,6 @@ int saveCharactersToPath(struct Character *arr, size_t nmemb, const char *filena
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
-    if (fd < 0) {
-        return ERR_INVALID_FD;
-    }
-
     FILE *fp = fdopen(fd, "rb");
     if (fp == NULL) {
         return ERR_OPEN_FILE;
@@ -500,6 +475,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
  * @retval Returns 1 if an error occurs during the deserialization process. Returns 2 if the executable it was launced from was not a setUID executable owned by user pitchpoltadmin, or if an error occurs in acquiring or dropping permissions. Otherwise, it returns 0.
  */
 int secureLoad(const char *filepath) {
+    //! no need to validate filepath here
     // char *resolvedFilepath = realpath(filepath, NULL);
     // if (!resolvedFilepath) {
     //     return 0;
