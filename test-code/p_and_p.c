@@ -1,46 +1,36 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <p_and_p.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #define SUCCESS 0
 #define ERR_OPEN_FILE 1
-#define ERR_INSUFFICIENT_MEMORY 1
-#define ERR_FILE_CORRUPTION 1
+#define ERR_MEMORY_ALLOCATION 1
+#define ERR_READ_FILE 1
+#define ERR_WRITE_FILE 1
+#define ERR_SANITIZATION 1
 #define ERR_SIZE_0 1
-#define ERR_INVALID_SIZE 1
 #define ERR_WRAPPING 1
 #define ERR_CLOSE_FILE 1
 #define ERR_FFLUSH 1
 #define ERR_NULL_POINTER 1
 #define ERR_INVALID_TYPE 1
-#define ERR_INVALID_FD 1
-#define ERR_NO_USER_INFO 0
-#define ERR_ACQUIRE_PERMISSION 2
-#define ERR_DROP_PERMISSION 2
-#define ERR_RETRIEVE_FD_INFO 0
-#define ERR_FD_USERID 2
-#define ERR_FD_EXECUTE_PERMISSION 2
-#define ERR_CLEAR_ENV 0
-#define ERR_DESERIALIZATION 1
-#define ERR_CLOSE_FD 0
 
+// static_assert(sizeof(size_t) == 8, "We assume the size of size_t is 64bit.");
 
 /**
- * @brief  Serializes an array of ItemDetails structs.
- *
+ * @brief  Serializes an array of ItemDetails structs, and stores the array using the ItemDetails
+ * file format.
  * @param  arr: An array of ItemDetails structs.
- * @param  nmemb: Number of items.
- * @param  fd: A file descriptor.
+ * @param  nmemb: The number of struct ItemDetails.
+ * @param  fd: A file descriptor for the file being written.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
@@ -61,15 +51,15 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_FILE_CORRUPTION;
+    return ERR_WRITE_FILE;
   }
 
   for (size_t i = 0; i < nmemb; i++) {
     const struct ItemDetails *currentItem = &arr[i];
 
     if (!isValidItemDetails(currentItem)) {
-      if (fclose(fp) != 0) {
-        return ERR_CLOSE_FILE;
+      if (ftruncate(fd, 0) || fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;  // use of ftruncate(): Ensure the serialization is atomic
       }
       return ERR_INVALID_TYPE;
     }
@@ -77,18 +67,24 @@ int saveItemDetails(const struct ItemDetails *arr, size_t nmemb, int fd) {
     size_t elsWritten = fwrite(currentItem, sizeof(struct ItemDetails), 1, fp);
 
     if (elsWritten != 1) {
-      if (fclose(fp) != 0) {
+      if (ftruncate(fd, 0) || fclose(fp) != 0) {
         return ERR_CLOSE_FILE;
       }
-      return ERR_FILE_CORRUPTION;
+      return ERR_WRITE_FILE;
     }
   }
 
   if (fflush(fp) != 0) {
+    if (ftruncate(fd, 0) != 0) {
+      return ERR_SANITIZATION;
+    }
     return ERR_FFLUSH;
   }
 
   if (fclose(fp) != 0) {
+    if (ftruncate(fd, 0) != 0) {
+      return ERR_SANITIZATION;
+    }
     return ERR_CLOSE_FILE;
   }
 
@@ -101,10 +97,9 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const cha
 
 /**
  * @brief  Deserializes a file, including allocating enough memory to store the number of records
- * contained in the file, and write the address of that memory to ptr. The memory is to be freed by
- * the caller. Write all records contained in the file into the allocated memory. Write the number
- * of records to nmemb.
- *
+ * contained in the file, and writing the address of that memory to ptr. The memory is to be freed
+ * by the caller. Write all records contained in the file into the allocated memory. Write the
+ * number of records to nmemb.
  * @param  ptr: The address of a pointer-to-ItemDetails struct.
  * @param  nmemb: The address of a size_t.
  * @param  fd: A file descriptor for the file being deserialized.
@@ -112,6 +107,10 @@ int saveItemDetailsToPath(const struct ItemDetails *arr, size_t nmemb, const cha
  * should be freed). Otherwise, it returns 0.
  */
 int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
+  if (ptr == NULL || nmemb == NULL) {
+    return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer later
+  }
+
   FILE *fp = fdopen(fd, "rb");
   if (fp == NULL) {
     return ERR_OPEN_FILE;
@@ -122,17 +121,16 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_FILE_CORRUPTION;
+    return ERR_READ_FILE;
   }
 
   if (num == 0) {  // Ensure that 0 is never passed as a size argument to calloc(). (CWE-687)
     return ERR_SIZE_0;
   }
 
-  if (num >
-      SIZE_MAX / sizeof(struct ItemDetails)) {  // Prevent wrapping when calculating the size
-                                                // in calloc(). (CWE-190, CWE-128)
-                                                // https://wiki.sei.cmu.edu/confluence/display/c/
+  if (num > SIZE_MAX / sizeof(struct ItemDetails)) {  // Prevent wrapping when calculating the size
+                                                      // in calloc(). (CWE-190, CWE-128)
+                                                      // https://wiki.sei.cmu.edu/confluence/display/c/
     return ERR_WRAPPING;
   }
 
@@ -141,7 +139,7 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_INSUFFICIENT_MEMORY;
+    return ERR_MEMORY_ALLOCATION;
   }
 
   for (size_t i = 0; i < num; i++) {
@@ -150,18 +148,15 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     size_t elsRead = fread(currentItem, sizeof(struct ItemDetails), 1, fp);
 
     if (elsRead != 1) {
-      memset(*ptr, 0,
-             num * sizeof(struct ItemDetails));  // Sanitize memory to prevent information leakage
       free(*ptr);
       *ptr = NULL;  // Avoid dangling pointer
       if (fclose(fp) != 0) {
         return ERR_CLOSE_FILE;
       }
-      return ERR_FILE_CORRUPTION;
+      return ERR_READ_FILE;
     }
 
     if (!isValidItemDetails(currentItem)) {
-      memset(*ptr, 0, num * sizeof(struct ItemDetails));
       free(*ptr);
       *ptr = NULL;
       if (fclose(fp) != 0) {
@@ -171,31 +166,30 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     }
   }
 
-  if (nmemb == NULL) {
-    return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer
-  }
-  *nmemb = num;
-
   if (fflush(fp) != 0) {
-    memset(*ptr, 0, num * sizeof(struct ItemDetails));
     free(*ptr);
     *ptr = NULL;
     return ERR_FFLUSH;
   }
 
   if (fclose(fp) != 0) {
-    memset(*ptr, 0, num * sizeof(struct ItemDetails));
     free(*ptr);
     *ptr = NULL;
     return ERR_CLOSE_FILE;
   }
+
+  *nmemb = num;
 
   return SUCCESS;
 }
 
 /**
  * @brief  Checks whether a string constitutes a valid name field.
- * @note
+ * @note   The characters contained in a name field must have a graphical representation (as defined
+ * by the C function isgraph). No other characters are permitted. This means that names cannot
+ * contain (for instance) whitespace or control characters. A name field is always a
+ * DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length at most
+ * DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first NUL byte.
  * @param  *str: String to be validated.
  * @retval Returns 1 if it is a valid name field, and 0 if not.
  */
@@ -216,7 +210,11 @@ int isValidName(const char *str) {
 
 /**
  * @brief  Checks whether a string constitutes a valid multi-word field.
- * @note
+ * @note   A multi-word field may contain all the characters in a name field, and may also contain
+ * space characters (but the first and last characters must not be spaces). A multi-word field is
+ * always a DEFAULT_BUFFER_SIZE block of bytes. The block contains a NUL-terminated string of length
+ * at most DEFAULT_BUFFER_SIZE-1. It is undefined what characters are in the block after the first
+ * NUL byte.
  * @param  *str: String to be validated.
  * @retval Returns 1 if it is a valid multi-word field, and 0 if not.
  */
@@ -259,7 +257,7 @@ int isValidItemDetails(const struct ItemDetails *id) {
  * @note   A Character struct is valid iff: the profession field is a valid name field, the name
  * field is a valid multi-word field, the total number of items carried does not exceed MAX_ITEMS,
  * and inventorySize is less than or equal to MAX_ITEMS. `inventorySize` is a 64-bit unsigned
- * integer value
+ * integer value.
  * @param  *c: A pointer to the Character struct.
  * @retval Returns 1 if the struct is valid, and 0 if not.
  */
@@ -283,19 +281,18 @@ int isValidCharacter(const struct Character *c) {
 /**
  * @brief  Saves characters in the Character file format, and validates records using the
  * isValidCharacter function, but otherwise behave in the same way as saveItemDetails.
- * @note
  * @param  *arr: An array of characters.
  * @param  nmemb: The number of Character structs.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
-  if (nmemb == 0) {
-    return ERR_SIZE_0;
-  }
-
   if (arr == NULL) {
     return ERR_NULL_POINTER;
+  }
+
+  if (nmemb == 0) {
+    return ERR_SIZE_0;
   }
 
   FILE *fp = fdopen(fd, "wb");
@@ -307,40 +304,49 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_FILE_CORRUPTION;
+    return ERR_WRITE_FILE;
   }
 
   const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) +
-                                    DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
+                                    DEFAULT_BUFFER_SIZE * 2 +
+                                    sizeof(size_t);  // No wrapping aroud risk, value is small
 
   for (size_t i = 0; i < nmemb; i++) {
     const struct Character *currentCharacter = &arr[i];
 
     if (!isValidCharacter(currentCharacter)) {
-      if (fclose(fp) != 0) {
-        return ERR_CLOSE_FILE;
+      if (ftruncate(fd, 0) || fclose(fp) != 0) {
+        return ERR_CLOSE_FILE;  // use of ftruncate(): Ensure the serialization is atomic
       }
       return ERR_INVALID_TYPE;
     }
 
     const size_t bytesOfUsedInventory =
         sizeof(struct ItemCarried) * currentCharacter->inventorySize;
-    const size_t bytesToWrite = bytesOfFixedFields + bytesOfUsedInventory;
+
+    const size_t bytesToWrite =
+        bytesOfFixedFields + bytesOfUsedInventory;  // No wrapping around risk, value is small
 
     size_t elsWritten = fwrite(currentCharacter, bytesToWrite, 1, fp);
 
     if (elsWritten != 1) {
-      if (fclose(fp) != 0) {
+      if (ftruncate(fd, 0) || fclose(fp) != 0) {
         return ERR_CLOSE_FILE;
       }
-      return ERR_FILE_CORRUPTION;
+      return ERR_WRITE_FILE;
     }
   }
 
   if (fflush(fp) != 0) {
+    if (ftruncate(fd, 0) != 0) {
+      return ERR_SANITIZATION;
+    }
     return ERR_FFLUSH;
   }
   if (fclose(fp) != 0) {
+    if (ftruncate(fd, 0) != 0) {
+      return ERR_SANITIZATION;
+    }
     return ERR_CLOSE_FILE;
   }
 
@@ -350,13 +356,16 @@ int saveCharacters(struct Character *arr, size_t nmemb, int fd) {
 /**
  * @brief  Loads characters in the Character file format, and validates records using the
  * isValidCharacter function, but otherwise behave in the same way as loadItemDetails.
- * @note
  * @param  **ptr: A pointer to a pointer to characters.
  * @param  *nmemb: The address of a size_t.
  * @param  fd: A file descriptor.
  * @retval Returns 1 if an error occurs in the serialization process. Otherwise, it returns 0.
  */
 int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
+  if (ptr == NULL || nmemb == NULL) {
+    return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer later
+  }
+
   FILE *fp = fdopen(fd, "rb");
   if (fp == NULL) {
     return ERR_OPEN_FILE;
@@ -367,7 +376,7 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_FILE_CORRUPTION;
+    return ERR_READ_FILE;
   }
 
   if (num == 0) {  // Ensure that 0 is never passed as a size argument to calloc(). (CWE-687)
@@ -384,35 +393,35 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     if (fclose(fp) != 0) {
       return ERR_CLOSE_FILE;
     }
-    return ERR_INSUFFICIENT_MEMORY;
+    return ERR_MEMORY_ALLOCATION;
   }
 
   const size_t bytesOfFixedFields = sizeof(uint64_t) + sizeof(enum CharacterSocialClass) +
-                                    DEFAULT_BUFFER_SIZE * 2 + sizeof(size_t);
+                                    DEFAULT_BUFFER_SIZE * 2 +
+                                    sizeof(size_t);  // No wrapping around risk, value is small
 
   for (size_t i = 0; i < num; ++i) {
     struct Character *currentCharacter = &(*ptr)[i];
 
-    // Reading the fixed part
     if (fread(currentCharacter, bytesOfFixedFields, 1, fp) != 1) {
       free(*ptr);
       *ptr = NULL;  // Avoid dangling pointer
       if (fclose(fp) != 0) {
         return ERR_CLOSE_FILE;
       }
-      return ERR_FILE_CORRUPTION;
+      return ERR_READ_FILE;
     }
 
-    // Reading the flexible part
     const size_t bytesOfUsedInventory =
         sizeof(struct ItemCarried) * currentCharacter->inventorySize;
+
     if (fread((char *)currentCharacter + bytesOfFixedFields, bytesOfUsedInventory, 1, fp) != 1) {
       free(*ptr);
-      *ptr = NULL;  // Avoid dangling pointer
+      *ptr = NULL;
       if (fclose(fp) != 0) {
         return ERR_CLOSE_FILE;
       }
-      return ERR_FILE_CORRUPTION;
+      return ERR_READ_FILE;
     }
 
     if (!isValidCharacter(currentCharacter)) {
@@ -424,11 +433,6 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
       return ERR_INVALID_TYPE;
     }
   }
-
-  if (nmemb == NULL) {
-    return ERR_NULL_POINTER;  // Avoid dereferencing NULL pointer
-  }
-  *nmemb = num;
 
   if (fflush(fp) != 0) {
     free(*ptr);
@@ -442,24 +446,25 @@ int loadCharacters(struct Character **ptr, size_t *nmemb, int fd) {
     return ERR_CLOSE_FILE;
   }
 
+  *nmemb = num;
+
   return SUCCESS;
 }
 
 /**
  * @brief  Acquires appropriate permissions to load the ItemDetails database securely.
- * @note
+ * @note   It should attempt to acquire appropriate permissions for opening the ItemDetails database
+ * (that is: the effective userID should be set to the userID of pitchpoltadmin), should load the
+ * database from the specified file, and then (after permanently dropping privileges), call the
+ * function playGame to which it should pass the loaded data and the number of items in the loaded
+ * data. It should check the running process's permissions to ensure that the executable it was
+ * launched from was indeed a setUID executable owned by user pitchpoltadmin.
  * @param  *filepath: Filepath for ItemDetails database.
  * @retval Returns 1 if an error occurs during the deserialization process. Returns 2 if the
  * executable it was launced from was not a setUID executable owned by user pitchpoltadmin, or if an
  * error occurs in acquiring or dropping permissions. Otherwise, it returns 0.
  */
 int secureLoad(const char *filepath) {
-  //! no need to validate filepath here
-  // char *resolvedFilepath = realpath(filepath, NULL);
-  // if (!resolvedFilepath) {
-  //     return 0;
-  // }
-
   const uid_t originalEuid = geteuid();
 
   struct ItemDetails *p = NULL;
@@ -467,73 +472,60 @@ int secureLoad(const char *filepath) {
 
   struct passwd *userInfo = getpwnam("pitchpoltadmin");
   if (userInfo == NULL) {
-    // free(resolvedFilepath);
-    // resolvedFilepath = NULL;
-    return ERR_NO_USER_INFO;
+    return 0;
   }
 
   if (originalEuid != userInfo->pw_uid) {
     if (seteuid(userInfo->pw_uid) != 0) {
-      // free(resolvedFilepath);
-      // resolvedFilepath = NULL;
-      return ERR_ACQUIRE_PERMISSION;
+      return 2;  // Error occurs in acquiring permissions
     }
   }
-  /*
-  p_and_p.c|493 col 14 warning| [flawfinder] (misc) open: Check when opening files|~
-       - can an attacker redirect it (via symlinks), force the opening of special file|~
-       type (e.g., device files), move things around to create a race condition, contr|~
-      ol its ancestors, or change its contents? (CWE-362).   [Warning]
-  */
-  // int fd = open(resolvedFilepath, O_RDONLY);
+
   int fd = open(filepath, O_RDONLY);
   if (fd == -1) {
-    // free(resolvedFilepath);
-    // resolvedFilepath = NULL;
-    return ERR_OPEN_FILE;
+    return 0;
   }
-
-  // free(resolvedFilepath);
-  // resolvedFilepath = NULL;
 
   if (seteuid(originalEuid) != 0) {
     if (close(fd) != 0) {
-      return ERR_CLOSE_FD;
+      return 2;
     }
-    return ERR_DROP_PERMISSION;
+    return 2;  // Error occurs in dropping permissions
   }
 
   struct stat fileStat;
   if (fstat(fd, &fileStat) != 0) {
     if (close(fd) != 0) {
-      return ERR_CLOSE_FD;
+      return 0;
     }
-    return ERR_RETRIEVE_FD_INFO;
+    return 0;
   }
+
   if (fileStat.st_uid != userInfo->pw_uid) {
     if (close(fd) != 0) {
-      return ERR_CLOSE_FD;
+      return 2;
     }
-    return ERR_FD_USERID;
+    return 2;  // The executable it was launced from was not owned by user pitchpoltadmin
   }
+
   if (!(fileStat.st_mode & S_IXUSR)) {
     if (close(fd) != 0) {
-      return ERR_CLOSE_FD;
+      return 2;
     }
-    return ERR_FD_EXECUTE_PERMISSION;
+    return 2;  // The executable it was launced from was not a setUID executable
   }
 
   if (loadItemDetails(&p, &numItems, fd) != 0) {
     if (close(fd) != 0) {
-      return ERR_CLOSE_FD;
+      return 1;
     }
-    return ERR_DESERIALIZATION;
+    return 1;  // Error occurs in deserialization
   }
 
   if (close(fd) != 0) {
     free(p);
     p = NULL;
-    return ERR_CLOSE_FD;
+    return 0;
   }
 
   playGame(p, numItems);
@@ -546,12 +538,12 @@ int secureLoad(const char *filepath) {
 
 void playGame(struct ItemDetails *ptr, size_t nmemb);
 
-//! delete the playGame() definition, but not the declaration before submitting this .c file
+//! Only submit the above code
 void playGame(struct ItemDetails *ptr, size_t nmemb) {
-  struct ItemDetails item = ptr[0];
-  uint64_t id = item.itemID;
-  printf("id is: %ld\n", id);
-  printf("id is: %ld\n", nmemb);
-  printf("euid is: %d\n", geteuid());
-  printf("uid is: %d\n", getuid());
+  //   struct ItemDetails item = ptr[0];
+  //   uint64_t id = item.itemID;
+  //   printf("id is: %ld\n", id);
+  //   printf("id is: %ld\n", nmemb);
+  //   printf("euid is: %d\n", geteuid());
+  //   printf("uid is: %d\n", getuid());
 }
