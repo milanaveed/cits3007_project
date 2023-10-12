@@ -129,8 +129,10 @@ int loadItemDetails(struct ItemDetails **ptr, size_t *nmemb, int fd) {
     return ERR_SIZE_0;
   }
 
-  if (num > SIZE_MAX / sizeof(struct ItemDetails)) {  // Prevent wrapping when calculating the size
-                                                      // in calloc(). (CWE-190, CWE-128)
+  if (num >
+      SIZE_MAX / sizeof(struct ItemDetails)) {  // Prevent wrapping when calculating the size
+                                                // in calloc(). (CWE-190, CWE-128)
+                                                // https://wiki.sei.cmu.edu/confluence/display/c/
     return ERR_WRAPPING;
   }
 
